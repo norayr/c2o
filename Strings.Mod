@@ -1,8 +1,7 @@
-(*---------------------------------------------------------------------------
---   Dynamic string handling (Turbo Library) 
---   © Helmut Zinn   V88/05/21 - V94/03/09 - V05/03/18
---   2013 including Luowy's improvement
----------------------------------------------------------------------------*)
+(*-----------------------------------------------------------------------------
+--   Unit Strings - Emulation of my old Turbo-Pascal string handling
+--   (C) Helmut Zinn   V88/05/21 - V94/03/09 - V05/03/18
+-----------------------------------------------------------------------------*)
 
 MODULE C2cpStrings;
 
@@ -10,31 +9,27 @@ MODULE C2cpStrings;
 
 	IMPORT Strings;
 
-	CONST 
-		tab* = 09X; 
-		line* = 0DX;
+	CONST TAB* = 09X; CR* = 0DX;
 
-	TYPE String* = POINTER TO ARRAY OF CHAR;
+	TYPE DynString* = POINTER TO ARRAY OF CHAR;
 
-	PROCEDURE NewString* (IN str: ARRAY OF CHAR): String;
-		VAR s: String;
+	PROCEDURE MakeDynString* (s: ARRAY OF CHAR): DynString;
+		VAR len: INTEGER; d: DynString;
 	BEGIN
-		NEW(s, LEN(str$) + 1);
-		s^ := str$;
-		RETURN s;
-	END NewString; 
+		len := LEN(s$);
+		NEW(d, len + 1);
+		d^ := s$;
+		RETURN d;
+	END MakeDynString;
 
-	PROCEDURE NewStringFillChar* (fill: CHAR; len: INTEGER): String;
-		VAR i: INTEGER; s: String;
+	PROCEDURE MakeDynChar* (zeichen: CHAR; len: INTEGER): DynString;
+		VAR i: INTEGER; res: DynString;
 	BEGIN
-		NEW(s, len + 1);
-		FOR i := 0 TO len - 1 DO s[i] := fill END;
-		s[len] := 0X;
-		RETURN s;
-	END NewStringFillChar;
-
-
-	(*======== chars =======================*)
+		NEW(res, len + 1);
+		FOR i := 0 TO len - 1 DO res[i] := zeichen END;
+		res[len] := 0X;
+		RETURN res;
+	END MakeDynChar;
 
 	PROCEDURE Cap* (ch: CHAR): CHAR;
 	BEGIN
@@ -61,148 +56,136 @@ MODULE C2cpStrings;
 
 	PROCEDURE IsSpace* (ch: CHAR): BOOLEAN;
 	BEGIN
-		RETURN (ch = ' ') OR (ch = tab);
+		RETURN (ch = ' ') OR (ch = TAB);
 	END IsSpace;
 
-
-	(*======== dynamic strings ========*)
-
-	PROCEDURE Pos* (IN target, source: ARRAY OF CHAR): INTEGER;
+	PROCEDURE Pos* (target, source: ARRAY OF CHAR): INTEGER;
 		VAR pos: INTEGER;
 	BEGIN
-		Strings.Find(source, target, 0, pos); (* Note: Not found is pos := -1 (CP) instead of pos := 0 (TP) !!! *)
+		Strings.Find(source, target, 0, pos); (* -- Note: Not found is pos := -1 (CP) instead of pos := 0 (TP) !!! *)
 		RETURN pos;
 	END Pos;
 
-	PROCEDURE SubStr* (IN source: ARRAY OF CHAR; pos, len: INTEGER): String;
-		VAR s: String;
+	PROCEDURE Substr* (source: ARRAY OF CHAR; a, len: INTEGER): DynString;
+		VAR res: DynString;
 	BEGIN
-		NEW(s, len + 1);
-		Strings.Extract(source, pos, len, s^);
-		RETURN s;
-	END SubStr;
+		NEW(res, len + 1);
+		Strings.Extract(source, a, len, res^);
+		RETURN res;
+	END Substr;
 
-	PROCEDURE Left* (IN source: ARRAY OF CHAR; len: INTEGER): String;
+	PROCEDURE Left* (source: ARRAY OF CHAR; len: INTEGER): DynString;
 	BEGIN
 		IF len >= LEN(source$) THEN
-			RETURN NewString(source)
+			RETURN MakeDynString(source$)
 		ELSE
-			RETURN SubStr(source, 0, len)
+			RETURN Substr(source, 0, len)
 		END;
 	END Left;
 
-	PROCEDURE Right* (IN source: ARRAY OF CHAR; len: INTEGER): String;
+	PROCEDURE Right* (source: ARRAY OF CHAR; len: INTEGER): DynString;
 		VAR a: INTEGER;
 	BEGIN
 		a := LEN(source$) - len;
 		IF a <= 0 THEN
-			RETURN NewString(source)
+			RETURN MakeDynString(source$)
 		ELSE
-			RETURN SubStr(source, a, len)
+			RETURN Substr(source, a, len)
 		END;
 	END Right;
 
-	PROCEDURE PadLeft* (IN source: ARRAY OF CHAR; len: INTEGER; pad: CHAR): String;
+	PROCEDURE Lpad* (source: ARRAY OF CHAR; len: INTEGER; zeichen: CHAR): DynString;
 		VAR
-			s: String; i, j, slen: INTEGER;
+			z: ARRAY 2 OF CHAR;
+			res: ARRAY 256 OF CHAR;
 	BEGIN
-		NEW(s, len + 1);
-		slen := LEN(source$);
-		i := 0; WHILE slen < len DO s[i] := pad; INC(i); INC(slen) END; (* append pad left *)
-		j := 0; WHILE (i < len) DO s[i] := source[j]; INC(i); INC(j) END; (* copy source *)
-		s[i] := 0X;
-		RETURN s;
-	END PadLeft;
+		res := source$;
+		z := ' '; z[0] := zeichen;
+		WHILE LEN(res$) < len DO res := z$ + res$ END; (* verlängern *)
+		RETURN Substr(res, 0, len); (* verkürzen  *)
+	END Lpad;
 
-	PROCEDURE PadRight* (IN source: ARRAY OF CHAR; len: INTEGER; pad: CHAR): String;
+	PROCEDURE Rpad* (source: ARRAY OF CHAR; len: INTEGER; zeichen: CHAR): DynString;
 		VAR
-			s: String; i, slen: INTEGER;
+			z: ARRAY 2 OF CHAR;
+			res: ARRAY 256 OF CHAR;
 	BEGIN
-		NEW(s, len + 1);
-		slen := LEN(source$);
-		i := 0; WHILE (i < len) & (i < slen) DO s[i] := source[i]; INC(i) END; (* copy source *)
-		WHILE i < len DO s[i] := pad; INC(i) END; (* append pad right *)
-		s[i] := 0X;
-		RETURN s;
-	END PadRight;
+		res := source$;
+		z := ' '; z[0] := zeichen;
+		WHILE LEN(res$) < len DO res := res$ + z END; (* verlängern *)
+		RETURN Substr(res, 0, len); (* verkürzen  *)
+	END Rpad;
 
-	PROCEDURE Trim* (IN source: ARRAY OF CHAR): String;
-		VAR
-			a, b, i, n: INTEGER; s: String; 
-			ch, pch: CHAR;
+	PROCEDURE Trim* (source: ARRAY OF CHAR): DynString;
+		VAR a, b, i, k, n: INTEGER; res: DynString;
 	BEGIN
-		a := 0; b := LEN(source$) - 1;
-		WHILE (a <= b) & ((source[a] = ' ') OR (source[a] = tab)) DO INC(a) END;
-		WHILE (a <= b) & ((source[b] = ' ') OR (source[b] = tab)) DO DEC(b) END;
-		i := a; pch := 0X; n := 0;
-		WHILE (i < b)DO
-			ch := source[i]; 
-			IF ch = tab THEN ch := ' ' END; (* change tabs to spaces *)
-			IF (ch = ' ') & (pch = ' ') THEN INC(n) END; (* maximum 1 blank between the words *)
-			pch := ch; INC(i);
+		FOR i := 0 TO LEN(source$) - 1 DO (* Tabs gegen Blank tauschen *)
+			IF source[i] = CHR(09) THEN source[i] := ' ' END;
 		END;
-		(* after knowing the length copy source *)
-		NEW(s, b - a - n + 2);
-		i := 0; pch := ' ';
-		WHILE a <= b DO
-			ch := source[a]; 
-			IF ch = tab THEN ch := ' ' END; (* change tabs to spaces *)
-			IF (ch # ' ') OR (pch # ' ') THEN s[i] := ch; INC(i) END; (* maximum 1 blank between the words *)
-			pch := ch; INC(a);
-		END; 
-		s[i] := 0X;
-		RETURN s;
+		a := 0; b := LEN(source$) - 1;
+		WHILE (a <= b) & (source[a] = ' ') DO a := a + 1 END;
+		WHILE (a <= b) & (source[b] = ' ') DO b := b - 1 END;
+		res := Substr(source, a, b - a + 1);
+		n := LEN(res$); (* maximal 1 Blank zwischen den Wörter *)
+		FOR i := n - 1 TO 0 BY - 1 DO
+			IF (res[i] = " ") & (res[i + 1] = " ") THEN
+				FOR k := i TO n - 1 DO
+					res[k] := res[k + 1]
+				END;
+			END;
+		END;
+		RETURN res;
 	END Trim;
 
-	PROCEDURE Before* (IN source, target: ARRAY OF CHAR): String;
+	PROCEDURE Before* (source: ARRAY OF CHAR; target: ARRAY OF CHAR): DynString;
 		VAR a: INTEGER;
 	BEGIN
 		a := Pos(target, source);
-		IF a =  - 1 THEN
-			RETURN NewString(source)
+		IF a = - 1 THEN
+			RETURN MakeDynString(source$)
 		ELSE
 			RETURN Left(source, a)
 		END;
 	END Before;
 
-	PROCEDURE After* (IN source, target: ARRAY OF CHAR): String;
+	PROCEDURE After* (source: ARRAY OF CHAR; target: ARRAY OF CHAR): DynString;
 		VAR a: INTEGER;
 	BEGIN
 		a := Pos(target, source);
-		IF a =  - 1 THEN
-			RETURN NewString('')
+		IF a = - 1 THEN
+			RETURN MakeDynString('')
 		ELSE
 			RETURN Right(source, LEN(source$) - a - LEN(target$))
 		END;
 	END After;
 
-	PROCEDURE Parse* (VAR source: ARRAY OF CHAR; IN separator: ARRAY OF CHAR): String;
-		VAR res: String;
+	PROCEDURE Parse* (VAR source: ARRAY OF CHAR; separator: ARRAY OF CHAR): DynString;
+		VAR res: DynString;
 	BEGIN
 		res := Before(source, separator);
 		source := After(source, separator)$;
 		RETURN res;
 	END Parse;
 
-	PROCEDURE ToUpper* (IN source: ARRAY OF CHAR): String;
+	PROCEDURE ToUpper* (source: ARRAY OF CHAR): DynString;
 		VAR target: ARRAY 256 OF CHAR;
 	BEGIN
 		Strings.ToUpper(source, target);
-		RETURN NewString(target);
+		RETURN MakeDynString(target$);
 	END ToUpper;
 
-	PROCEDURE ToLower* (IN source: ARRAY OF CHAR): String;
+	PROCEDURE ToLower* (source: ARRAY OF CHAR): DynString;
 		VAR target: ARRAY 256 OF CHAR;
 	BEGIN
 		Strings.ToLower(source, target);
-		RETURN NewString(target);
+		RETURN MakeDynString(target$);
 	END ToLower;
 
-	PROCEDURE IntToString* (x: INTEGER): String;
+	PROCEDURE IntToString* (x: INTEGER): DynString;
 		VAR s: ARRAY 256 OF CHAR;
 	BEGIN
 		Strings.IntToString(x, s);
-		RETURN NewString(s);
+		RETURN MakeDynString(s$);
 	END IntToString;
 
 	PROCEDURE StringToInt* (s: ARRAY OF CHAR): INTEGER;
@@ -219,11 +202,11 @@ MODULE C2cpStrings;
 		RETURN x;
 	END StringToReal;
 
-	PROCEDURE RealToString* (x: REAL): String;
+	PROCEDURE RealToString* (x: REAL): DynString;
 		VAR s: ARRAY 256 OF CHAR;
 	BEGIN
 		Strings.RealToString(x, s);
-		RETURN NewString(s);
+		RETURN MakeDynString(s$);
 	END RealToString;
 
 END C2cpStrings.

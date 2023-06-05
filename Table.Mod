@@ -1,55 +1,55 @@
-(*-------------------------------------------------------------------------
+(*-----------------------------------------------------------------------------
 --   Symbol Tabelle verwalten
---   © Helmut Zinn   V90/03/24 - V95/12/13 - V05/05/12
----------------------------------------------------------------------------
---   Search        Search for qualident & identifier in the table - return its index.
---                 Schlüssel für Name holen.
---   Insert        Insert qualident, identifier, type and alias into the table.
---                 Neue Daten in Tabelle eintragen.
---   Update        Update at qualident, identifier the type and the alias.
---                 Vorhandene Daten in Tabelle ändern.
+--   (C) Helmut Zinn   V90/03/24 - V95/12/13 - V05/05/12
+-------------------------------------------------------------------------------
+--   Search       Search for qualident & identifier in the table - return its index.
+--                Schlüssel für Name holen.
+--   Insert       Insert qualident, identifier, type and alias into the table.
+--                Neue Daten in Tabelle eintragen.
+--   Update       Update at qualident, identifier the type and the alias.
+--                Vorhandene Daten in Tabelle ändern.
 --
---   Merken        Zeilennummer des Eintrages merken.
---   Reserviert    Auf reservierte Wörter prüfen.
---   Pruefen       Alias-Namen für doppelte Namen vergeben.
+--   Merken       Zeilennummer des Eintrages merken.
+--   Reserviert   Auf reservierte Wörter prüfen.
+--   Pruefen      Alias-Namen für doppelte Namen vergeben.
 --
---   AlphaOrder    Change the index to alpha order index.
---                 Welches Wort an diesem Platz wäre, wenn alpha sortiert.
---   GetQualident  Get the qualident from the symbol table.
---                 Gruppen-Name zum Schlüssel holen.
---   GetIdentifier Get the identifier from the symbol table.
---                 Name zum Schlüssel holen.
---   GetAlias      Get the alias name of the identifier from the symbol table.
---                 Alias-Name zum Schlüssel holen.
---   GetType       Get the type of the identifier from the symbol table.
---                 Type zum Schlüssel holen.
---   GetInfo       Info zum Schlüssel holen.
---   GetSign       Kennzeichen zum Schlüssel holen.
+--   AlphaOrder   Change the index to alpha order index.
+--                Welches Wort an diesem Platz wäre, wenn alpha sortiert.
+--   GetQualident Get the qualident from the symbol table.
+--                Gruppen-Name zum Schlüssel holen.
+--   GetIdentifier     Get the identifier from the symbol table.
+--                Name zum Schlüssel holen.
+--   GetAlias     Get the alias name of the identifier from the symbol table.
+--                Alias-Name zum Schlüssel holen.
+--   GetType      Get the type of the identifier from the symbol table.
+--                Type zum Schlüssel holen.
+--   GetInfo      Info zum Schlüssel holen.
+--   GetSign      Kennzeichen zum Schlüssel holen.
 --   GetLinenumber Zeilennummer zum Schlüssel holen.
 --
---   FindFirst     Erster Aliasname einer Gruppe mit Zeichen = 'x' holen.
---   FindNext      Nächster Aliasname einer Gruppe mit Zeichen = 'x' holen.
+--   FindFirst    Erster Aliasname einer Gruppe mit Zeichen = 'x' holen.
+--   FindNext     Nächster Aliasname einer Gruppe mit Zeichen = 'x' holen.
 --
---   Load          Load the symbol table from file.	 [qualidant].name[:type][/alias]
---                 Symboltabelle von Datei laden.
---   Save          Save the symbol table to file.	      '/' = [Tab]
---                 Symboltabelle in  Datei sichern.
---   ShowSymList   List symbol table for debugging.
---                 Die gesamte Schlüsseltabelle für Testzwecke ausgeben.
---   Dispose       Give the table memory free - empty table for new use.
---                 Symboltabelle im Speicher löschen.
--------------------------------------------------------------------------*)
+--   Load         Load the symbol table from file.	 [qualidant].name[:type][/alias]
+--                Symboltabelle von Datei laden.
+--   Save         Save the symbol table to file.	   '/' = [Tab]
+--                Symboltabelle in  Datei sichern.
+--   ShowSymList  List symbol table for debugging.
+--                Die gesamte Schlüsseltabelle für Testzwecke ausgeben.
+--   Dispose      Give the table memory free - empty table for new use.
+--                Symboltabelle im Speicher löschen.
+-----------------------------------------------------------------------------*)
 
 MODULE C2cpTable;
 
 	
 
 	IMPORT
-		C2cpKeytab, C2cpStrings,
+		C2cpKeytab, C2cpStrings, 
 		Converters, Files, Ports, StdLog, TextMappers, TextModels, TextRulers, TextViews, Views;
 
 	CONST
-		maxSym = C2cpKeytab.maxKey;
+		maxSym = C2cpKeytab.maxKey DIV 2; (* maxKey = 2000; in Keytab definiert *)
 
 	VAR
 		numberOfSym-: INTEGER;
@@ -71,52 +71,44 @@ MODULE C2cpTable;
 
 	PROCEDURE AlphaOrder* (index: INTEGER): INTEGER;
 	BEGIN
-		ASSERT((0 <= index) & (index <= numberOfSym), 22);
 		RETURN symtable[index].index;
 	END AlphaOrder;
 
-	PROCEDURE GetQualident* (index: INTEGER): C2cpStrings.String;
+	PROCEDURE GetQualident* (index: INTEGER): C2cpStrings.DynString;
 	BEGIN
-		ASSERT((0 <= index) & (index <= numberOfSym), 22);
 		RETURN C2cpKeytab.GetKeyword(symtable[index].qualident)
 	END GetQualident;
 
-	PROCEDURE GetIdentifier* (index: INTEGER): C2cpStrings.String;
+	PROCEDURE GetIdentifier* (index: INTEGER): C2cpStrings.DynString;
 	BEGIN
-		ASSERT((0 <= index) & (index <= numberOfSym), 22);
 		RETURN C2cpKeytab.GetKeyword(symtable[index].identifier)
 	END GetIdentifier;
 
-	PROCEDURE GetAlias* (index: INTEGER): C2cpStrings.String;
-		VAR ali: C2cpStrings.String;
+	PROCEDURE GetAlias* (index: INTEGER): C2cpStrings.DynString;
+		VAR ali: C2cpStrings.DynString;
 	BEGIN
-		ASSERT((0 <= index) & (index <= numberOfSym), 22);
 		ali := C2cpKeytab.GetKeyword(symtable[index].alias);
 		IF ali$ = '' THEN ali := GetIdentifier(index) END;
 		RETURN ali;
 	END GetAlias;
 
-	PROCEDURE GetType* (index: INTEGER): C2cpStrings.String;
+	PROCEDURE GetType* (index: INTEGER): C2cpStrings.DynString;
 	BEGIN
-		ASSERT((0 <= index) & (index <= numberOfSym), 22);
 		RETURN C2cpKeytab.GetKeyword(symtable[index].ntype)
 	END GetType;
 
-	PROCEDURE GetInfo* (index: INTEGER): C2cpStrings.String;
+	PROCEDURE GetInfo* (index: INTEGER): C2cpStrings.DynString;
 	BEGIN
-		ASSERT((0 <= index) & (index <= numberOfSym), 22);
 		RETURN C2cpKeytab.GetKeyword(symtable[index].info)
 	END GetInfo;
 
 	PROCEDURE GetSign* (index: INTEGER): CHAR;
 	BEGIN
-		ASSERT((0 <= index) & (index <= numberOfSym), 22);
 		RETURN symtable[index].sign
 	END GetSign;
 
 	PROCEDURE GetLinenumber* (index: INTEGER): INTEGER;
 	BEGIN
-		ASSERT((0 <= index) & (index <= numberOfSym), 22);
 		RETURN symtable[index].linenumber
 	END GetLinenumber;
 
@@ -132,13 +124,11 @@ MODULE C2cpTable;
 		WHILE a <= b DO
 			i := (a + b) DIV 2;
 			n := AlphaOrder(i);
-			qu2 := C2cpStrings.ToUpper(GetQualident(n))$;
-			id2 := C2cpStrings.ToUpper(GetIdentifier(n))$;
+			qu2 := C2cpStrings.ToUpper(GetQualident(n) )$;
+			id2 := C2cpStrings.ToUpper(GetIdentifier(n) )$;
 			(* -- internal order by qualidant, identifier (case sensitive) *)
-			IF (qu1$ > qu2$) 
-			OR (qu1$ = qu2$) & ((id1$ > id2$) 
-			OR (id1$ = id2$) & (identifier$ > GetIdentifier(n)$))
-			THEN a := i + 1
+			IF (qu1$ > qu2$) OR (qu1$ = qu2$) & ((id1$ > id2$) OR (id1$ = id2$) & (identifier$ > GetIdentifier(n)$))
+				THEN a := i + 1
 			ELSE b := i - 1 END;
 		END;
 		RETURN a;
@@ -149,7 +139,7 @@ MODULE C2cpTable;
 	BEGIN
 		nr := SeekFor(qualident, identifier);
 		IF (nr > numberOfSym) OR (qualident$ # GetQualident(AlphaOrder(nr))$)
-		OR (identifier$ # GetIdentifier(AlphaOrder(nr))$) THEN
+			OR (identifier$ # GetIdentifier(AlphaOrder(nr))$) THEN
 			nr := SeekFor('', identifier); (* suche in Außengruppe wiederholen *)
 		END;
 		IF (nr > numberOfSym) OR (identifier$ # GetIdentifier(AlphaOrder(nr))$) THEN
@@ -167,7 +157,7 @@ MODULE C2cpTable;
 		IF (a >= numberOfSym) OR (qualident$ # GetQualident(AlphaOrder(a))$)
 			OR (identifier$ # GetIdentifier(AlphaOrder(a))$) THEN
 			IF numberOfSym < maxSym THEN
-				INC(numberOfSym); (* in Tabelle eintragen *)
+				numberOfSym := numberOfSym + 1; (* in Tabelle eintragen *)
 				symtable[numberOfSym].qualident := C2cpKeytab.SearchKey(qualident);
 				symtable[numberOfSym].identifier := C2cpKeytab.SearchKey(identifier);
 				symtable[numberOfSym].alias := C2cpKeytab.SearchKey(alias);
@@ -181,7 +171,7 @@ MODULE C2cpTable;
 					END;
 					symtable[a].index := numberOfSym;
 				ELSE (* Eintrag zurücknehmen  *)
-					DEC(numberOfSym); (* weil KeyTab-Überlauf  *)
+					numberOfSym := numberOfSym - 1; (* weil KeyTab-Überlauf  *)
 				END;
 			ELSE (* kein Eintrag weil Tabellenüberlauf *)
 				StdLog.String(' *** C2cpTabelle.Insert: symbol table overflow *** ');
@@ -249,38 +239,35 @@ MODULE C2cpTable;
 
 	PROCEDURE Pruefen*;
 		VAR
-			i, j, n1, n2, doppelt: INTEGER;
-			qu, id, qualident, identifier, alias: C2cpStrings.String;
-			uqu, uid, uqualident, uidentifier: ARRAY 256 OF CHAR;
+			i, j, n, doppelt: INTEGER;
+			tg, tn, qualident, identifier, alias: C2cpStrings.DynString;
+			utg, utn, uqualident, uidentifier: ARRAY 256 OF CHAR;
 			alias2, number: ARRAY 256 OF CHAR;
 	BEGIN
 		(* 1. Teil: Alias Name bei Groß/Klein-Schreibung vergeben *)
 		doppelt := 0;
-		FOR i := 1 TO numberOfSym - 1 DO;
-			n1 := AlphaOrder(i - 1);
-			n2 := AlphaOrder(i);
-			IF n1 > n2 THEN
-				n1 := AlphaOrder(i);
-				n2 := AlphaOrder(i - 1);
-			END;
-			qu := GetQualident(n1);
-			id := GetIdentifier(n1);
-			qualident := GetQualident(n2);
-			identifier := GetIdentifier(n2);
-			uqu := C2cpStrings.ToUpper(qu)$;
+		qualident := GetQualident(0); (* '' *)
+		identifier := GetIdentifier(0) (* '' *);
+		FOR i := 0 TO numberOfSym - 1 DO;
+			n := AlphaOrder(i);
+			tg := qualident;
+			tn := identifier;
+			qualident := GetQualident(n);
+			identifier := GetIdentifier(n);
+			utg := C2cpStrings.ToUpper(tg)$;
 			uqualident := C2cpStrings.ToUpper(qualident)$;
-			uid := C2cpStrings.ToUpper(id)$;
+			utn := C2cpStrings.ToUpper(tn)$;
 			uidentifier := C2cpStrings.ToUpper(identifier)$;
-			IF (uqu = uqualident) & (uid = uidentifier) THEN
+			IF (utg = uqualident) & (utn = uidentifier) THEN
 				doppelt := doppelt + 1;
-				IF (GetSign(n2) # 'S') & (GetAlias(n2) = identifier) THEN
+				IF (GetSign(n) # 'S') & (GetAlias(n) = identifier) THEN
 					number := C2cpStrings.IntToString(doppelt)$;
 					alias2 := identifier + number;
 					StdLog.String('   Hinweis: Alias-Name "');
 					StdLog.String(qualident); StdLog.String('.'); StdLog.String(alias2);
 					StdLog.String('" eingefügt.');
 					StdLog.Ln;
-					symtable[n2].alias := C2cpKeytab.SearchKey(alias2);
+					symtable[n].alias := C2cpKeytab.SearchKey(alias2);
 				END;
 			ELSE
 				doppelt := 0;
@@ -288,16 +275,16 @@ MODULE C2cpTable;
 		END;
 		(* 2. Teil: Alias Name bei reservierten Wörter vergeben *)
 		FOR i := 0 TO numberOfSym - 1 DO;
-			n2 := AlphaOrder(i);
-			qualident := GetQualident(n2);
-			identifier := GetIdentifier(n2);
-			IF (GetSign(n2) # 'S') & Reserviert(identifier) & (GetAlias(n2) = identifier)
+			n := AlphaOrder(i);
+			qualident := GetQualident(n);
+			identifier := GetIdentifier(n);
+			IF (GetSign(n) # 'S') & Reserviert(identifier) & (GetAlias(n) = identifier)
 				THEN
 				alias2 := 'z' + identifier;
 				StdLog.String('   Hinweis: Alias-Name "');
 				StdLog.String(qualident); StdLog.String('.'); StdLog.String(alias2); StdLog.String('" eingefügt.');
 				StdLog.Ln;
-				symtable[n2].alias := C2cpKeytab.SearchKey(alias2);
+				symtable[n].alias := C2cpKeytab.SearchKey(alias2);
 			END;
 		END;
 		(* 3. Teil: Ist der Programmname eindeutig? *)
@@ -314,13 +301,13 @@ MODULE C2cpTable;
 		END;
 		(* 4. Teil: Ist der Alias Name auch in Name ohne Alias vorhanden ? *)
 		FOR i := 0 TO numberOfSym - 1 DO;
-			n2 := AlphaOrder(i);
-			IF (GetLinenumber(n2) # 0) & (GetSign(n2) # 'R') THEN
-				qualident := GetQualident(n2);
-				identifier := GetIdentifier(n2);
-				alias := GetAlias(n2);
+			n := AlphaOrder(i);
+			IF (GetLinenumber(n) # 0) & (GetSign(n) # 'R') THEN
+				qualident := GetQualident(n);
+				identifier := GetIdentifier(n);
+				alias := GetAlias(n);
 				j := Search(qualident, alias);
-				IF (j # 0) & (j # n2) & (GetAlias(j) = alias) THEN
+				IF (j # 0) & (j # n) & (GetAlias(j) = alias) THEN
 					StdLog.String('   Warnung: Alias-Name "');
 					StdLog.String(qualident); StdLog.String('.'); StdLog.String(alias);
 					StdLog.String('" ist doppelt.');
@@ -330,8 +317,8 @@ MODULE C2cpTable;
 		END;
 	END Pruefen;
 
-	PROCEDURE FindNext* (): C2cpStrings.String;
-		VAR nr: INTEGER; aliasname: C2cpStrings.String;
+	PROCEDURE FindNext* (): C2cpStrings.DynString;
+		VAR nr: INTEGER; aliasname: C2cpStrings.DynString;
 	BEGIN
 		REPEAT
 			pos := pos + 1;
@@ -345,7 +332,7 @@ MODULE C2cpTable;
 		RETURN aliasname;
 	END FindNext;
 
-	PROCEDURE FindFirst* (qualident: ARRAY OF CHAR; zc: CHAR): C2cpStrings.String;
+	PROCEDURE FindFirst* (qualident: ARRAY OF CHAR; zc: CHAR): C2cpStrings.DynString;
 	BEGIN
 		pos := SeekFor(qualident, '') - 1; (* vor dem ersten Eintrag *)
 		gru := qualident$;
@@ -369,11 +356,9 @@ MODULE C2cpTable;
 		VAR
 			md: TextModels.Model; sc: TextMappers.Scanner;
 			vw: Views.View; loc: Files.Locator;
-			linenumber: INTEGER; sign: CHAR; 
-			qualident, identifier, alias, ntype, info: ARRAY 256 OF CHAR;
+			linenumber: INTEGER; sign: CHAR; qualident, identifier, alias, ntype, info: ARRAY 256 OF CHAR;
 	BEGIN
-		StdLog.String('-- Symbol table: Loaded from '); StdLog.String(path); StdLog.String(filename);
-		StdLog.Ln;
+		StdLog.String('-- Symbol table: Loaded from '); StdLog.String(path); StdLog.String(filename); StdLog.Ln;
 		loc := Files.dir.This(path);
 		vw := Views.Old(Views.dontAsk, loc, filename, conv);
 		IF vw # NIL THEN
@@ -387,8 +372,8 @@ MODULE C2cpTable;
 				IF sc.type = TextMappers.int THEN linenumber := sc.int; sc.Scan END;
 				sign := sc.string[0]; sc.Scan; (* IF sign = 00X THEN sign := ' ' END; *)
 				IF sc.type = TextMappers.string THEN qualident := sc.string$; sc.Scan END;
-				IF sc.type = TextMappers.real THEN
-					qualident := C2cpStrings.IntToString(SHORT(ENTIER(sc.real)))$; sc.Scan
+				IF sc.type = TextMappers.real THEN 
+					qualident := C2cpStrings.IntToString(SHORT(ENTIER(sc.real)))$; sc.Scan 
 				END;
 				IF sc.char = '.' THEN sc.Scan END;
 				IF sc.type = TextMappers.string THEN identifier := sc.string$; sc.Scan END;
@@ -405,8 +390,7 @@ MODULE C2cpTable;
 				Insert(qualident, identifier, alias, ntype, info, sign, linenumber);
 			END;
 			StdLog.String('-- Symbol table: There are'); StdLog.Int(numberOfSym); StdLog.String(' symbols');
-			StdLog.String(' and'); StdLog.Int(C2cpKeytab.numberOfKey); StdLog.String(' keywords');
-			StdLog.Ln;
+			StdLog.String(' and'); StdLog.Int(C2cpKeytab.numberOfKey); StdLog.String(' keywords'); StdLog.Ln;
 		ELSE
 			StdLog.String('-- Symbol table: File not found'); StdLog.Ln;
 		END;
@@ -425,7 +409,7 @@ MODULE C2cpTable;
 			md: TextModels.Model; fm: TextMappers.Formatter;
 			vw: Views.View; loc: Files.Locator;
 			i, res, index, linenumber: INTEGER;
-			sign: CHAR; qualident, identifier, alias, ntype, info: C2cpStrings.String;
+			sign: CHAR; qualident, identifier, alias, ntype, info: C2cpStrings.DynString;
 	BEGIN
 		StdLog.String('-- Symbol table: Save to '); StdLog.String(path); StdLog.String(filename); StdLog.Ln;
 		md := TextModels.dir.New();
@@ -483,12 +467,6 @@ MODULE C2cpTable;
 		vw := TextViews.dir.New(md);
 		Views.OpenAux(vw, title); (* browser mode *)
 		WriteSymRuler(fm);
-		fm.WriteString('Symbol Table:'); fm.WriteLn;
-		fm.WriteLn;
-		fm.WriteTab; fm.WriteInt(numberOfSym);
-		fm.WriteTab; fm.WriteString(' symbols.');
-		fm.WriteLn;
-		fm.WriteLn;
 		fm.WriteTab; fm.WriteString(' # ');
 		fm.WriteTab; fm.WriteString('index');
 		fm.WriteTab; fm.WriteString('line');
@@ -512,22 +490,17 @@ MODULE C2cpTable;
 			fm.WriteTab; fm.WriteString(GetInfo(index));
 			fm.WriteLn;
 		END;
-		fm.WriteLn;
 		fm.WriteString('Ende.'); fm.WriteLn;
 	END ShowSymList;
 
 	PROCEDURE Dispose*;
 	BEGIN
 		numberOfSym := 0;
-		symtable[0].index := 0;
 		C2cpKeytab.Dispose;
 	END Dispose;
 
 BEGIN
-	(* empty table *)
 	numberOfSym := 0;
-	symtable[0].index := 0;
-	(* table stored in .txt files *)
 	conv := Converters.list;
 	WHILE (conv # NIL) & (conv.fileType # "txt") DO
 		conv := conv.next

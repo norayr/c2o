@@ -1,22 +1,25 @@
-(*-------------------------------------------------------------------------
+(*-----------------------------------------------------------------------------
 --   Manage the key table
 --   Schlüssel-Tabelle verwalten
---   © Helmut Zinn   V90/03/24 - V95/02/23 - V05/05/12
----------------------------------------------------------------------------
---   SearchKey      Get index of keyword, if not found then enter it into keytable.
---                  Schlüssel für ein Wort holen, wenn fehlt in Tabelle eintragen.
---   EntryOrder     Alpha order place of this word.
---                  Auf welchen Platz das Wort wäre, wenn alpha sortiert.
---   AlphaOrder     Which word is on this place?
---                  Welches Wort an diesem Platz wäre, wenn alpha sortiert.
---   GetKeyword     Get the word from the key table.
---                  Das Wort, das an diesem Platz ist, holen.
+--   (C) Helmut Zinn   V90/03/24 - V95/02/23 - V05/05/12
+-------------------------------------------------------------------------------
+--   MakeDynString  Copy static string to dynamic string.
+--                  Kopiert den statischen string in den dynamischen String.
 --
---   ShowKeyList    List keyword table for debugging.
---                  Die gesamte Schlüsseltabelle für Testzwecke ausgeben.
---   Dispose        Give the table memory free - empty table for new use.
---                  Schlüsseltabelle im Speicher löschen
--------------------------------------------------------------------------*)
+--   SearchKey    Get index of keyword, if not found then enter it into keytable.
+--                Schlüssel für ein Wort holen, wenn fehlt in Tabelle eintragen.
+--   EntryOrder   Alpha order place of this word.
+--                Auf welchen Platz das Wort wäre,   wenn alpha sortiert.
+--   AlphaOrder   Which word is on this place?
+--                Welches Wort an diesem Platz wäre, wenn alpha sortiert.
+--   GetKeyword   Get the word from the key table.
+--                Das Wort, das an diesem Platz ist, holen.
+--
+--   ShowKeyList  List keyword table for debugging.
+--                Die gesamte Schlüsseltabelle für Testzwecke ausgeben.
+--   Dispose      Give the table memory free - empty table for new use.
+--                Schlüsseltabelle im Speicher löschen
+-----------------------------------------------------------------------------*)
 
 MODULE C2cpKeytab;
 
@@ -32,25 +35,22 @@ MODULE C2cpKeytab;
 		keytable: ARRAY maxKey OF RECORD
 			place: INTEGER;
 			alpha: INTEGER;
-			word: C2cpStrings.String;
+			word: C2cpStrings.DynString;
 		END;
 
 	PROCEDURE EntryOrder* (index: INTEGER): INTEGER;
 	BEGIN
-		ASSERT((0 <= index) & (index <= numberOfKey), 21);
 		RETURN keytable[index].place;
 	END EntryOrder;
 
 	PROCEDURE AlphaOrder* (index: INTEGER): INTEGER;
 	BEGIN
-		ASSERT((0 <= index) & (index <= numberOfKey), 21);
 		RETURN keytable[index].alpha;
 	END AlphaOrder;
 
-	PROCEDURE GetKeyword* (index: INTEGER): C2cpStrings.String;
+	PROCEDURE GetKeyword* (index: INTEGER): C2cpStrings.DynString;
 
 	BEGIN
-		ASSERT((0 <= index) & (index <= numberOfKey), 21);
 		RETURN keytable[index].word;
 	END GetKeyword;
 
@@ -74,7 +74,7 @@ MODULE C2cpKeytab;
 		END;
 		IF (a > numberOfKey) OR (word$ # GetKeyword(AlphaOrder(a))$) THEN
 			IF numberOfKey < maxKey - 1 THEN
-				INC(numberOfKey);
+				numberOfKey := numberOfKey + 1;
 				FOR i := 1 TO numberOfKey DO
 					IF keytable[i].place >= a THEN
 						keytable[i].place := keytable[i].place + 1;
@@ -85,7 +85,7 @@ MODULE C2cpKeytab;
 				END;
 				keytable[numberOfKey].place := a; (* entry word into key table -- in Tabelle eintragen *)
 				keytable[a].alpha := numberOfKey;
-				keytable[numberOfKey].word := C2cpStrings.NewString(word);
+				keytable[numberOfKey].word := C2cpStrings.MakeDynString(word);
 			ELSE
 				StdLog.String(' *** C2cpKeytab.SearchKey table overflow *** ');
 				StdLog.Ln;
@@ -119,12 +119,6 @@ MODULE C2cpKeytab;
 		vw := TextViews.dir.New(md);
 		Views.OpenAux(vw, title); (* browser mode *)
 		WriteRuler(fm);
-		fm.WriteString('Keyword Table:'); fm.WriteLn;
-		fm.WriteLn;
-		fm.WriteTab; fm.WriteInt(numberOfKey); 
-		fm.WriteTab; fm.WriteString(' keywords.');
-		fm.WriteLn;
-		fm.WriteLn;
 		fm.WriteTab; fm.WriteString('Key');
 		fm.WriteTab; fm.WriteString('Place');
 		fm.WriteTab; fm.WriteString('Word (entry order)');
@@ -132,7 +126,7 @@ MODULE C2cpKeytab;
 		fm.WriteTab; fm.WriteString('Place');
 		fm.WriteTab; fm.WriteString('Word (alpha order)');
 		fm.WriteLn;
-		FOR i := 0 TO numberOfKey DO
+		FOR i := 0 TO numberOfKey - 1 DO
 			fm.WriteTab; fm.WriteInt(i);
 			fm.WriteTab; fm.WriteInt(EntryOrder(i));
 			fm.WriteTab; fm.WriteString(GetKeyword(i));
@@ -141,7 +135,6 @@ MODULE C2cpKeytab;
 			fm.WriteTab; fm.WriteString(GetKeyword(AlphaOrder(i)));
 			fm.WriteLn;
 		END;
-		fm.WriteLn;
 		fm.WriteString('Ende.'); fm.WriteLn;
 	END ShowKeyList;
 
@@ -149,7 +142,7 @@ MODULE C2cpKeytab;
 	BEGIN
 		WHILE numberOfKey > 0 DO
 			keytable[numberOfKey].word := NIL;
-			DEC(numberOfKey);
+			numberOfKey := numberOfKey - 1;
 		END;
 	END Dispose;
 
@@ -157,5 +150,5 @@ BEGIN
 	numberOfKey := 0; (* empty word at place 0 -- Der 1. Platz in der Tabelle ist ein Leerwort *)
 	keytable[0].place := 0;
 	keytable[0].alpha := 0;
-	keytable[0].word := C2cpStrings.NewString('');
+	keytable[0].word := C2cpStrings.MakeDynString('');
 END C2cpKeytab.

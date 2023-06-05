@@ -1,25 +1,24 @@
-(*---------------------------------------------------------------------
+(*-----------------------------------------------------------------------------
 --   Von C nach Pascal übersetzen
---   © Helmut Zinn   1994..2014
----------------------------------------------------------------------*)
+--   (C) Helmut Zinn   V94/04/06 - V95/11/07 - V05/05/12
+-----------------------------------------------------------------------------*)
 
 MODULE C2cpCmds;
 
 	
 
 	IMPORT
-		C2cpCBiber, C2cpFiles, C2cpStrings, C2cpTable, C2cpTrace,
-		Controllers, HostCmds, HostFiles, Ports, StdCmds, StdLog, Windows;
+		C2cpCBiber, C2cpFiles, C2cpStrings, C2cpTable,
+		Controllers, HostCmds, HostFiles, StdCmds, StdLog, Windows;
 
 	CONST
+		debug = FALSE;
 		bibdir = 'C2cp/Transl/'; (* Pfad der Übersetzungsbiblothek *)
-		bufferLenght = 1024;
 
 	VAR
 		pfad: ARRAY 256 OF CHAR; (* Pfad des zu übersetzenden Programmes *)
 		out, hdr, tmp: C2cpFiles.Text; (* Ausgabedatei für odc & FORWARD-Definitionen *)
 		forwardpos: INTEGER;
-		deep: INTEGER;
 
 	PROCEDURE PreLoad (IN name: ARRAY OF CHAR);
 		VAR i: INTEGER;
@@ -45,8 +44,8 @@ MODULE C2cpCmds;
 		VAR i: INTEGER;
 	BEGIN
 		FOR i := 0 TO LEN(aufgabe$) - 1 DO
-			IF aufgabe[i] = C2cpStrings.tab THEN out.fm.WriteTab;
-			ELSIF aufgabe[i] = C2cpStrings.line THEN out.fm.WriteLn;
+			IF aufgabe[i] = C2cpStrings.TAB THEN out.fm.WriteTab;
+			ELSIF aufgabe[i] = C2cpStrings.CR THEN out.fm.WriteLn;
 			ELSE out.fm.WriteChar(aufgabe[i]);
 			END;
 		END;
@@ -55,11 +54,9 @@ MODULE C2cpCmds;
 	PROCEDURE WriteHeader (out, hdr: C2cpFiles.Text);
 		VAR i, n: INTEGER; name: ARRAY 256 OF CHAR;
 	BEGIN
+		InsertAt(0, hdr);
 		name := C2cpTable.GetAlias(1)$;
-		out.fm.WriteString('MODULE '); out.fm.WriteString(name); out.fm.WriteString(';');
-		out.fm.WriteLn;
-		out.fm.WriteLn;
-		InsertAt(out.fm.rider.Pos(), hdr);
+		out.fm.WriteString('MODULE '); out.fm.WriteString(name); out.fm.WriteString(';'); out.fm.WriteLn;
 		out.fm.WriteLn;
 		out.fm.WriteTab; out.fm.WriteString('IMPORT ');
 		FOR i := 0 TO C2cpTable.numberOfSym - 1 DO
@@ -73,7 +70,7 @@ MODULE C2cpCmds;
 		END;
 		out.fm.WriteString('StdLog;'); out.fm.WriteLn;
 		out.fm.WriteLn; out.fm.WriteTab;
-		forwardpos := 0; (* out.fm.rider.Pos(); *)
+		forwardpos := out.fm.rider.Pos();
 	END WriteHeader;
 
 	PROCEDURE WriteTrailer (out, tmp: C2cpFiles.Text);
@@ -81,15 +78,14 @@ MODULE C2cpCmds;
 	BEGIN
 		name := C2cpTable.GetAlias(1)$;
 		out.fm.WriteLn;
-		out.fm.WriteString('END '); out.fm.WriteString(name); out.fm.WriteString('.');
-		out.fm.WriteLn;
+		out.fm.WriteString('END '); out.fm.WriteString(name); out.fm.WriteString('.'); out.fm.WriteLn;
 		tmp.fm.WriteLn; tmp.fm.WriteTab;
-		IF forwardpos # 0 THEN InsertAt(forwardpos, tmp) END;
+		InsertAt(forwardpos, tmp);
 	END WriteTrailer;
 
 	PROCEDURE Pass1 (IN quelle: ARRAY OF CHAR);
 		VAR
-			s: C2cpFiles.Scanner; zustand: INTEGER; aufgabe: ARRAY bufferLenght OF CHAR;
+			s: C2cpFiles.Scanner; zustand: INTEGER; aufgabe: ARRAY 512 OF CHAR;
 	BEGIN
 		StdLog.String('   ' + pfad + quelle); StdLog.Ln;
 		IF C2cpFiles.Exist(pfad, quelle$) THEN
@@ -100,7 +96,9 @@ MODULE C2cpCmds;
 			WHILE ~ s.Eof() DO
 				s.Scan;
 				C2cpCBiber.Biber(s, zustand, aufgabe);
-				IF zustand = 99 THEN Pass1(aufgabe) END;
+				IF zustand = 17 THEN
+					Pass1(aufgabe);
+				END;
 			END;
 			s.CloseScanner;
 		ELSE
@@ -111,34 +109,28 @@ MODULE C2cpCmds;
 
 	PROCEDURE Pass2 (IN quelle: ARRAY OF CHAR);
 		VAR
-			s: C2cpFiles.Scanner; zustand: INTEGER; aufgabe: ARRAY bufferLenght OF CHAR;
+			s: C2cpFiles.Scanner; zustand: INTEGER; aufgabe: ARRAY 512 OF CHAR;
 	BEGIN
 		StdLog.String('   ' + pfad + quelle); StdLog.Ln;
-		C2cpTrace.SetPass2;
 		NEW(s);
 		s.OpenScanner(pfad + quelle);
 		zustand := 1;
 		WHILE ~ s.Eof() DO
 			s.Scan;
 			C2cpCBiber.Biber(s, zustand, aufgabe);
+			IF debug THEN
+				StdLog.Int(s.line); StdLog.String(': '); StdLog.String(s.s);
+				StdLog.Int(zustand); StdLog.String(': '); StdLog.String(aufgabe); StdLog.Ln;
+			END;
 			IF zustand = 13 THEN forwardpos := out.fm.rider.Pos() END;
 			WriteBuffer(out, aufgabe);
-			IF zustand = 99 THEN
+			IF zustand = 17 THEN
 				IF C2cpFiles.Exist(pfad, aufgabe$) THEN
-					INC(deep);
-					IF ODD(deep) THEN out.SetColor(Ports.blue) ELSE out.SetColor(Ports.red) END;
-					out.fm.WriteString(' '); out.fm.WriteInt(deep);
-					out.WriteOpenFold(' ===> START & -END- <=== ');
 					out.fm.WriteString(' ====================================> START <=== *)');
 					out.fm.WriteLn; out.fm.WriteTab;
 					Pass2(aufgabe);
 					out.fm.WriteString('(* #include '); out.fm.WriteString(aufgabe);
-					out.fm.WriteString(' '); out.fm.WriteInt(deep);
 					out.fm.WriteString(' ====================================> -END- <=== ');
-					out.WriteCloseFold;
-					DEC(deep);
-					IF ODD(deep) THEN out.SetColor(Ports.blue) ELSE out.SetColor(Ports.red) END;
-					IF deep = 0 THEN out.SetColor(Ports.defaultColor) END;
 				END;
 			END;
 			IF (zustand >= 7) & (zustand <= 9) THEN (*7*) (*8*) (*9*)
@@ -148,7 +140,7 @@ MODULE C2cpCmds;
 			END;
 		END;
 		s.CloseScanner;
-		StdLog.String('  '); StdLog.Int(s.lineNumber); StdLog.String(' lines readed'); StdLog.Ln;
+		StdLog.String('  '); StdLog.Int(s.line); StdLog.String(' lines readed'); StdLog.Ln;
 	END Pass2;
 
 	PROCEDURE TranslateFile* (IN filename: ARRAY OF CHAR);
@@ -171,18 +163,16 @@ MODULE C2cpCmds;
 			NEW(hdr); hdr.Assign('C2cp/Rsrc/Header.odc'); hdr.Reset;
 			NEW(out); out.Assign(pfad + project + '.odc'); out.Rewrite;
 			NEW(tmp); tmp.Assign(pfad + project + '.for'); tmp.Rewrite;
-			tmp.SetColor(Ports.blue);
 			WriteHeader(out, hdr);
-			deep := 0;
 			Pass2(source);
 			WriteTrailer(out, tmp);
 			out.Close;
 			C2cpTable.Save(pfad, project + '.csy');
 			StdLog.String('Aufgabe ausgeführt'); StdLog.Ln;
 		ELSE
-			StdLog.String('Datei '); StdLog.String(pfad + source); StdLog.String(' nicht gefunden');
-			StdLog.Ln;
+			StdLog.String('Datei '); StdLog.String(pfad + source); StdLog.String(' nicht gefunden'); StdLog.Ln;
 		END;
+		StdLog.Ln;
 	END TranslateFile;
 
 	PROCEDURE Translate*;

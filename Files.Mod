@@ -1,15 +1,14 @@
-(*-----------------------------------------------------------------------
+(*-----------------------------------------------------------------------------
 --   Unit Files - Emulation of Turbo-Pascal file handling
---   © Helmut Zinn   V05/03/19 - V05/05/12
------------------------------------------------------------------------*)
+--   (C) Helmut Zinn   V05/03/19 - V05/05/12
+-----------------------------------------------------------------------------*)
 
 MODULE C2cpFiles;
 
 	
 
 	IMPORT
-		C2cpStrings, C2cpTrace, Converters, Documents, Files,
-		StdFolds, StdLog, Stores, TextMappers, TextModels, TextViews, Views;
+		C2cpStrings, Converters, Documents, Files, StdLog, Stores, TextMappers, TextModels, TextViews, Views;
 
 	CONST
 		cName* = 1; cString* = 2; cInteger* = 3; cReal* = 4; cChar* = 5; cSpace* = 6; cEOL* = 7;
@@ -17,7 +16,7 @@ MODULE C2cpFiles;
 	TYPE
 		Scanner* = POINTER TO RECORD
 			rd-: Stores.Reader;
-			lineNumber-: INTEGER;
+			line-: INTEGER;
 			nextCh-: CHAR;
 			class*: INTEGER;
 			i-: LONGINT;
@@ -35,7 +34,7 @@ MODULE C2cpFiles;
 			vw-: Views.View;
 			md-: TextModels.Model;
 			sc-: TextMappers.Scanner;
-			fm*: TextMappers.Formatter;
+			fm-: TextMappers.Formatter;
 		END;
 
 	VAR
@@ -45,16 +44,16 @@ MODULE C2cpFiles;
 		VAR i, n, pa, pe: INTEGER;
 	BEGIN
 		n := LEN(filename$);
-		pa :=  - 1;
+		pa := - 1;
 		pe := n;
 		FOR i := 0 TO n - 1 DO
 			IF (filename[i] = '/') OR (filename[i] = '\') THEN pa := i; pe := n
 			ELSIF (filename[i] = '.') THEN pe := i
 			END;
 		END;
-		path := C2cpStrings.SubStr(filename, 0, pa + 1)$;
-		name := C2cpStrings.SubStr(filename, pa + 1, pe - pa - 1)$;
-		extension := C2cpStrings.SubStr(filename, pe + 1, n - pe - 1)$;
+		path := C2cpStrings.Substr(filename, 0, pa + 1)$;
+		name := C2cpStrings.Substr(filename, pa + 1, pe - pa - 1)$;
+		extension := C2cpStrings.Substr(filename, pe + 1, n - pe - 1)$;
 	END SplitFilename;
 
 	PROCEDURE Exist* (IN path: ARRAY OF CHAR; IN old: Files.Name): BOOLEAN;
@@ -82,18 +81,16 @@ MODULE C2cpFiles;
 		VAR
 			path, name, extension: ARRAY 256 OF CHAR;
 	BEGIN
-		SplitFilename(filename, path, name, extension); 
-		extension := C2cpStrings.ToLower(extension)$;
-		IF extension$ = 'odc' THEN
+		SplitFilename(filename, path, name, extension); extension := C2cpStrings.ToLower(extension)$;
+		IF extension$ = 'odc' THEN 
 			conv := NIL
 		ELSE
-			conv := Converters.list; 
-			WHILE (conv # NIL) & (conv.fileType # extension) DO conv := conv.next END;
+			conv := Converters.list; WHILE (conv # NIL) & (conv.fileType # extension) DO conv := conv.next END;
 			IF conv = NIL THEN conv := convtxt END;
 		END;
 	END GetFileConverter;
 
-	(*-------------------------------------------------------------------------
+	(*-----------------------------------------------------------------------------
 	--	Scanner
 	--	VAR sc: C2cpFiles.Scanner;
 	--
@@ -105,7 +102,7 @@ MODULE C2cpFiles;
 	--		sc.Scan
 	--	END
 	--	sc.CloseScanner
-	-------------------------------------------------------------------------*)
+	-----------------------------------------------------------------------------*)
 
 	PROCEDURE (sc: Scanner) OpenScanner* (filename: ARRAY OF CHAR), NEW;
 		VAR
@@ -114,7 +111,7 @@ MODULE C2cpFiles;
 			fi: Files.File;
 			c: SHORTCHAR;
 	BEGIN
-		sc.lineNumber := 1;
+		sc.line := 1;
 		(* Assign filename *)
 		PathToFileSpec(filename, loc, name);
 		fi := Files.dir.Old(loc, name, Files.shared);
@@ -139,21 +136,21 @@ MODULE C2cpFiles;
 		BEGIN
 			n := LEN(sc.s$); sc.s[n] := ch; sc.s[n + 1] := 0X;
 			sc.rd.ReadSChar(c); ch := c;
-			IF ch = LF THEN ch := C2cpStrings.line END; (* change LF to CR *)
 		END ReadChar;
 
 	BEGIN
 		ch := sc.nextCh;
 		sc.s := '';
-		IF (ch = C2cpStrings.line) OR (ch = LF) THEN
-			ch := C2cpStrings.line; (* change LF to CR *)
+		IF ch = C2cpStrings.CR THEN
 			sc.class := cEOL;
-			INC(sc.lineNumber); (* Neue Zeilennummer schon bei CR *)
+			INC(sc.line); (* Neue Zeilennummer schon bei CR *)
 			ReadChar; (* add CR - lese LF *)
-			IF (ch = C2cpStrings.line) OR (ch = LF) THEN (* Skip LF *)
-				ReadChar; (* lese Zeichen nach LF *)
-				sc.s[LEN(sc.s$) - 1] := 0X; (* delete LF *)
-			END;
+			IF ch = LF THEN ReadChar; sc.s[LEN(sc.s$)-1] := 0X; END; (* lese Zeichen nach LF& delete LF *)
+		ELSIF ch = LF THEN
+			ch := C2cpStrings.CR; (* change LF to CR *)
+			sc.class := cEOL;
+			INC(sc.line);
+			ReadChar;
 		ELSIF C2cpStrings.IsSpace(ch) THEN
 			sc.class := cSpace;
 			WHILE C2cpStrings.IsSpace(ch) DO ReadChar END;
@@ -165,13 +162,13 @@ MODULE C2cpFiles;
 			sc.class := cString;
 			REPEAT
 				ReadChar;
-			UNTIL (ch = "'") OR (ch = C2cpStrings.line) OR (ch = LF);
+			UNTIL (ch = "'") OR (ch = C2cpStrings.CR) OR (ch = LF);
 			IF ch = "'" THEN ReadChar END;
 		ELSIF ch = '"' THEN
 			sc.class := cString;
 			REPEAT
 				ReadChar;
-			UNTIL (ch = '"') OR (ch = C2cpStrings.line) OR (ch = LF);
+			UNTIL (ch = '"') OR (ch = C2cpStrings.CR) OR (ch = LF);
 			IF ch = '"' THEN ReadChar END;
 		ELSE
 			IF (ch = '+') OR (ch = '-') OR (ch = '$') THEN ReadChar END;
@@ -205,18 +202,15 @@ MODULE C2cpFiles;
 			END;
 		END;
 		sc.nextCh := ch;
-		C2cpTrace.Token(sc.lineNumber, sc.s);
 	END Scan;
 
 	PROCEDURE (sc: Scanner) CloseScanner*, NEW;
 	BEGIN
 		sc.rd.ConnectTo(NIL);
-		C2cpTrace.CloseDebug;
 	END CloseScanner;
 
-	(*-------------------------------------------------------------------------
+	(*-----------------------------------------------------------------------------
 	--	Text Interface for Turbo Library Emulation
-	--
 	--  VAR text: C2cpFiles.Text;
 	--
 	--  NEW(text);
@@ -236,7 +230,7 @@ MODULE C2cpFiles;
 	--
 	--  text.Rewrite;
 	--	text.fm.xxx
-	-------------------------------------------------------------------------*)
+	-----------------------------------------------------------------------------*)
 
 	PROCEDURE (text: Text) Assign* (IN filename: ARRAY OF CHAR), NEW;
 	BEGIN
@@ -305,39 +299,6 @@ MODULE C2cpFiles;
 		IF res # 0 THEN text.Debug END; (* on error open the text view in a window *)
 		IF res = 0 THEN text.done := TRUE ELSE text.done := FALSE END;
 	END Flush;
-
-	PROCEDURE (text: Text) SetColor* (color: INTEGER), NEW;
-		VAR
-			new: TextModels.Attributes;
-	BEGIN
-		new := text.fm.rider.attr;
-		new := TextModels.NewColor(new, color);
-		text.fm.rider.SetAttr(new); 	(* change current attributes of formatter *)
-	END SetColor;
-
-	PROCEDURE (text: Text) WriteOpenFold* (IN shortForm: ARRAY OF CHAR), NEW;
-		VAR
-			fold: StdFolds.Fold;
-			t: TextModels.Model;
-	BEGIN
-		t := TextModels.dir.NewFromString(shortForm); (* convert a string into a text model *)
-		fold := StdFolds.dir.New(StdFolds.expanded, "", t);
-		text.fm.WriteView(fold);
-		text.fm.WriteChar(' ');
-	END WriteOpenFold;
-
-	PROCEDURE (text: Text) WriteCloseFold*, NEW;
-		VAR
-			len: INTEGER;
-			fold: StdFolds.Fold;
-	BEGIN
-		fold := StdFolds.dir.New(StdFolds.expanded, "", NIL);
-		text.fm.WriteView(fold);
-		fold.Flip; (* swap long-form text, now between the two fold views, with hidden short-form text *)
-		len := text.fm.rider.Base().Length(); (* determine the text carrier's new length *)
-		text.fm.SetPos(len); (* position the formatter to the end of the text *)
-		text.fm.WriteChar(' ');
-	END WriteCloseFold;
 
 	PROCEDURE (text: Text) Close*, NEW;
 		VAR res: INTEGER;
