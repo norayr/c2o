@@ -52,39 +52,39 @@ MODULE C2cpTable;
 		maxSym = C2cpKeytab.maxKey DIV 2; (* maxKey = 2000; in Keytab definiert *)
 
 	VAR
-		numberOfSym-: INTEGER;
+		numberOfSym-: LONGINT;
 		symtable: ARRAY maxSym + 1 OF RECORD
-			index: INTEGER;
-			qualident: INTEGER;
-			identifier: INTEGER;
-			alias: INTEGER;
-			ntype: INTEGER;
-			info: INTEGER;
+			index: LONGINT;
+			qualident: LONGINT;
+			identifier: LONGINT;
+			alias: LONGINT;
+			ntype: LONGINT;
+			info: LONGINT;
 			sign: CHAR;
-			linenumber: INTEGER;
+			linenumber: LONGINT;
 		END;
 
-		pos: INTEGER; (* Suchposition für FindFirst und FindNext *)
+		pos: LONGINT; (* Suchposition für FindFirst und FindNext *)
 		gru: ARRAY 256 OF CHAR; (* Suchgruppe   für FindFirst und FindNext *)
 		zei: CHAR; (* Suchzeichen  für FindFirst und FindNext *)
 		conv: Converters.Converter; (* reading & writing txt files *)
 
-	PROCEDURE AlphaOrder* (index: INTEGER): INTEGER;
+	PROCEDURE AlphaOrder* (index: LONGINT): LONGINT;
 	BEGIN
 		RETURN symtable[index].index;
 	END AlphaOrder;
 
-	PROCEDURE GetQualident* (index: INTEGER): C2cpStrings.DynString;
+	PROCEDURE GetQualident* (index: LONGINT): C2cpStrings.DynString;
 	BEGIN
 		RETURN C2cpKeytab.GetKeyword(symtable[index].qualident)
 	END GetQualident;
 
-	PROCEDURE GetIdentifier* (index: INTEGER): C2cpStrings.DynString;
+	PROCEDURE GetIdentifier* (index: LONGINT): C2cpStrings.DynString;
 	BEGIN
 		RETURN C2cpKeytab.GetKeyword(symtable[index].identifier)
 	END GetIdentifier;
 
-	PROCEDURE GetAlias* (index: INTEGER): C2cpStrings.DynString;
+	PROCEDURE GetAlias* (index: LONGINT): C2cpStrings.DynString;
 		VAR ali: C2cpStrings.DynString;
 	BEGIN
 		ali := C2cpKeytab.GetKeyword(symtable[index].alias);
@@ -92,29 +92,29 @@ MODULE C2cpTable;
 		RETURN ali;
 	END GetAlias;
 
-	PROCEDURE GetType* (index: INTEGER): C2cpStrings.DynString;
+	PROCEDURE GetType* (index: LONGINT): C2cpStrings.DynString;
 	BEGIN
 		RETURN C2cpKeytab.GetKeyword(symtable[index].ntype)
 	END GetType;
 
-	PROCEDURE GetInfo* (index: INTEGER): C2cpStrings.DynString;
+	PROCEDURE GetInfo* (index: LONGINT): C2cpStrings.DynString;
 	BEGIN
 		RETURN C2cpKeytab.GetKeyword(symtable[index].info)
 	END GetInfo;
 
-	PROCEDURE GetSign* (index: INTEGER): CHAR;
+	PROCEDURE GetSign* (index: LONGINT): CHAR;
 	BEGIN
 		RETURN symtable[index].sign
 	END GetSign;
 
-	PROCEDURE GetLinenumber* (index: INTEGER): INTEGER;
+	PROCEDURE GetLinenumber* (index: LONGINT): LONGINT;
 	BEGIN
 		RETURN symtable[index].linenumber
 	END GetLinenumber;
 
-	PROCEDURE SeekFor (qualident, identifier: ARRAY OF CHAR): INTEGER;
+	PROCEDURE SeekFor (qualident, identifier: ARRAY OF CHAR): LONGINT;
 		VAR
-			a, b, i, n: INTEGER;
+			a, b, i, n: LONGINT;
 			qu1, id1, qu2, id2: ARRAY 255 OF CHAR;
 	BEGIN
 		qu1 := C2cpStrings.ToUpper(qualident)$;
@@ -134,8 +134,8 @@ MODULE C2cpTable;
 		RETURN a;
 	END SeekFor;
 
-	PROCEDURE Search* (qualident, identifier: ARRAY OF CHAR): INTEGER;
-		VAR nr: INTEGER;
+	PROCEDURE Search* (qualident, identifier: ARRAY OF CHAR): LONGINT;
+		VAR nr: LONGINT;
 	BEGIN
 		nr := SeekFor(qualident, identifier);
 		IF (nr > numberOfSym) OR (qualident$ # GetQualident(AlphaOrder(nr))$)
@@ -149,8 +149,8 @@ MODULE C2cpTable;
 		END;
 	END Search;
 
-	PROCEDURE Insert* (qualident, identifier, alias, ntype, info: ARRAY OF CHAR; zc: CHAR; zn: INTEGER);
-		VAR a, i: INTEGER;
+	PROCEDURE Insert* (qualident, identifier, alias, ntype, info: ARRAY OF CHAR; zc: CHAR; zn: LONGINT);
+		VAR a, i: LONGINT;
 	BEGIN
 		IF zc < ' ' THEN zc := ' ' END;
 		a := SeekFor(qualident, identifier);
@@ -187,8 +187,8 @@ MODULE C2cpTable;
 		END;
 	END Insert;
 
-	PROCEDURE Update* (qualident, identifier, alias, ntype, info: ARRAY OF CHAR; zc: CHAR; zn: INTEGER);
-		VAR i: INTEGER;
+	PROCEDURE Update* (qualident, identifier, alias, ntype, info: ARRAY OF CHAR; zc: CHAR; zn: LONGINT);
+		VAR i: LONGINT;
 	BEGIN
 		IF zc < ' ' THEN zc := ' ' END;
 		i := Search(qualident, identifier);
@@ -201,7 +201,7 @@ MODULE C2cpTable;
 		END;
 	END Update;
 
-	PROCEDURE Merken* (index, zn: INTEGER);
+	PROCEDURE Merken* (index, zn: LONGINT);
 	BEGIN
 		IF index > 0 THEN
 			IF symtable[index].linenumber = 0 THEN symtable[index].linenumber := zn END;
@@ -218,14 +218,14 @@ MODULE C2cpTable;
 			OR (wort = 'ELSE') OR (wort = 'ELSIF') OR (wort = 'EMPTY')
 			OR (wort = 'END') OR (wort = 'EXIT') OR (wort = 'EXTENSIBLE')
 			OR (wort = 'FALSE') OR (wort = 'FOR') OR (wort = 'IF')
-			OR (wort = 'IMPORT') OR (wort = 'IN') OR (wort = 'INTEGER')
-			OR (wort = 'IS') OR (wort = 'LIMITED') OR (wort = 'LONGINT')
+			OR (wort = 'IMPORT') OR (wort = 'IN') OR (wort = 'LONGINT')
+			OR (wort = 'IS') OR (wort = 'LIMITED') OR (wort = 'HUGEINT')
 			OR (wort = 'LOOP') OR (wort = 'MOD') OR (wort = 'MODULE')
 			OR (wort = 'NIL') OR (wort = 'OF') OR (wort = 'OR')
 			OR (wort = 'OUT') OR (wort = 'POINTER') OR (wort = 'PROCEDURE')
 			OR (wort = 'REAL') OR (wort = 'RECORD') OR (wort = 'REPEAT')
 			OR (wort = 'RETURN') OR (wort = 'SET') OR (wort = 'SHORTCHAR')
-			OR (wort = 'SHORTINT') OR (wort = 'THEN') OR (wort = 'TO')
+			OR (wort = 'INTEGER') OR (wort = 'THEN') OR (wort = 'TO')
 			OR (wort = 'TRUE') OR (wort = 'TYPE') OR (wort = 'UNTIL')
 			OR (wort = 'VAR') OR (wort = 'WHILE') OR (wort = 'WITH')
 			THEN
@@ -239,7 +239,7 @@ MODULE C2cpTable;
 
 	PROCEDURE Pruefen*;
 		VAR
-			i, j, n, doppelt: INTEGER;
+			i, j, n, doppelt: LONGINT;
 			tg, tn, qualident, identifier, alias: C2cpStrings.DynString;
 			utg, utn, uqualident, uidentifier: ARRAY 256 OF CHAR;
 			alias2, number: ARRAY 256 OF CHAR;
@@ -318,7 +318,7 @@ MODULE C2cpTable;
 	END Pruefen;
 
 	PROCEDURE FindNext* (): C2cpStrings.DynString;
-		VAR nr: INTEGER; aliasname: C2cpStrings.DynString;
+		VAR nr: LONGINT; aliasname: C2cpStrings.DynString;
 	BEGIN
 		REPEAT
 			pos := pos + 1;
@@ -341,7 +341,7 @@ MODULE C2cpTable;
 	END FindFirst;
 
 	PROCEDURE ReadLine (VAR sc: TextMappers.Scanner; OUT s: ARRAY OF CHAR);
-		VAR ch: CHAR; i: INTEGER;
+		VAR ch: CHAR; i: LONGINT;
 	BEGIN
 		i := 0; ch := sc.rider.char;
 		WHILE ~(sc.rider.eot OR (ch = TextModels.line) OR (ch = TextModels.para) OR (i > 254)) DO
@@ -356,7 +356,7 @@ MODULE C2cpTable;
 		VAR
 			md: TextModels.Model; sc: TextMappers.Scanner;
 			vw: Views.View; loc: Files.Locator;
-			linenumber: INTEGER; sign: CHAR; qualident, identifier, alias, ntype, info: ARRAY 256 OF CHAR;
+			linenumber: LONGINT; sign: CHAR; qualident, identifier, alias, ntype, info: ARRAY 256 OF CHAR;
 	BEGIN
 		StdLog.String('-- Symbol table: Loaded from '); StdLog.String(path); StdLog.String(filename); StdLog.Ln;
 		loc := Files.dir.This(path);
@@ -408,7 +408,7 @@ MODULE C2cpTable;
 		VAR
 			md: TextModels.Model; fm: TextMappers.Formatter;
 			vw: Views.View; loc: Files.Locator;
-			i, res, index, linenumber: INTEGER;
+			i, res, index, linenumber: LONGINT;
 			sign: CHAR; qualident, identifier, alias, ntype, info: C2cpStrings.DynString;
 	BEGIN
 		StdLog.String('-- Symbol table: Save to '); StdLog.String(path); StdLog.String(filename); StdLog.Ln;
@@ -459,7 +459,7 @@ MODULE C2cpTable;
 	PROCEDURE ShowSymList*;
 		VAR
 			md: TextModels.Model; vw: TextViews.View; title: Views.Title;
-			fm: TextMappers.Formatter; i, index: INTEGER;
+			fm: TextMappers.Formatter; i, index: LONGINT;
 	BEGIN
 		title := 'Symbol table';
 		md := TextModels.dir.New();

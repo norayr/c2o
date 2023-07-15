@@ -14,7 +14,7 @@ MODULE C2cpStrings;
 	TYPE DynString* = POINTER TO ARRAY OF CHAR;
 
 	PROCEDURE MakeDynString* (s: ARRAY OF CHAR): DynString;
-		VAR len: INTEGER; d: DynString;
+		VAR len: LONGINT; d: DynString;
 	BEGIN
 		len := LEN(s$);
 		NEW(d, len + 1);
@@ -22,8 +22,8 @@ MODULE C2cpStrings;
 		RETURN d;
 	END MakeDynString;
 
-	PROCEDURE MakeDynChar* (zeichen: CHAR; len: INTEGER): DynString;
-		VAR i: INTEGER; res: DynString;
+	PROCEDURE MakeDynChar* (zeichen: CHAR; len: LONGINT): DynString;
+		VAR i: LONGINT; res: DynString;
 	BEGIN
 		NEW(res, len + 1);
 		FOR i := 0 TO len - 1 DO res[i] := zeichen END;
@@ -59,14 +59,14 @@ MODULE C2cpStrings;
 		RETURN (ch = ' ') OR (ch = TAB);
 	END IsSpace;
 
-	PROCEDURE Pos* (target, source: ARRAY OF CHAR): INTEGER;
-		VAR pos: INTEGER;
+	PROCEDURE Pos* (target, source: ARRAY OF CHAR): LONGINT;
+		VAR pos: LONGINT;
 	BEGIN
 		Strings.Find(source, target, 0, pos); (* -- Note: Not found is pos := -1 (CP) instead of pos := 0 (TP) !!! *)
 		RETURN pos;
 	END Pos;
 
-	PROCEDURE Substr* (source: ARRAY OF CHAR; a, len: INTEGER): DynString;
+	PROCEDURE Substr* (source: ARRAY OF CHAR; a, len: LONGINT): DynString;
 		VAR res: DynString;
 	BEGIN
 		NEW(res, len + 1);
@@ -74,7 +74,7 @@ MODULE C2cpStrings;
 		RETURN res;
 	END Substr;
 
-	PROCEDURE Left* (source: ARRAY OF CHAR; len: INTEGER): DynString;
+	PROCEDURE Left* (source: ARRAY OF CHAR; len: LONGINT): DynString;
 	BEGIN
 		IF len >= LEN(source$) THEN
 			RETURN MakeDynString(source$)
@@ -83,8 +83,8 @@ MODULE C2cpStrings;
 		END;
 	END Left;
 
-	PROCEDURE Right* (source: ARRAY OF CHAR; len: INTEGER): DynString;
-		VAR a: INTEGER;
+	PROCEDURE Right* (source: ARRAY OF CHAR; len: LONGINT): DynString;
+		VAR a: LONGINT;
 	BEGIN
 		a := LEN(source$) - len;
 		IF a <= 0 THEN
@@ -94,7 +94,7 @@ MODULE C2cpStrings;
 		END;
 	END Right;
 
-	PROCEDURE Lpad* (source: ARRAY OF CHAR; len: INTEGER; zeichen: CHAR): DynString;
+	PROCEDURE Lpad* (source: ARRAY OF CHAR; len: LONGINT; zeichen: CHAR): DynString;
 		VAR
 			z: ARRAY 2 OF CHAR;
 			res: ARRAY 256 OF CHAR;
@@ -105,7 +105,7 @@ MODULE C2cpStrings;
 		RETURN Substr(res, 0, len); (* verkürzen  *)
 	END Lpad;
 
-	PROCEDURE Rpad* (source: ARRAY OF CHAR; len: INTEGER; zeichen: CHAR): DynString;
+	PROCEDURE Rpad* (source: ARRAY OF CHAR; len: LONGINT; zeichen: CHAR): DynString;
 		VAR
 			z: ARRAY 2 OF CHAR;
 			res: ARRAY 256 OF CHAR;
@@ -117,7 +117,7 @@ MODULE C2cpStrings;
 	END Rpad;
 
 	PROCEDURE Trim* (source: ARRAY OF CHAR): DynString;
-		VAR a, b, i, k, n: INTEGER; res: DynString;
+		VAR a, b, i, k, n: LONGINT; res: DynString;
 	BEGIN
 		FOR i := 0 TO LEN(source$) - 1 DO (* Tabs gegen Blank tauschen *)
 			IF source[i] = CHR(09) THEN source[i] := ' ' END;
@@ -138,7 +138,7 @@ MODULE C2cpStrings;
 	END Trim;
 
 	PROCEDURE Before* (source: ARRAY OF CHAR; target: ARRAY OF CHAR): DynString;
-		VAR a: INTEGER;
+		VAR a: LONGINT;
 	BEGIN
 		a := Pos(target, source);
 		IF a = - 1 THEN
@@ -149,7 +149,7 @@ MODULE C2cpStrings;
 	END Before;
 
 	PROCEDURE After* (source: ARRAY OF CHAR; target: ARRAY OF CHAR): DynString;
-		VAR a: INTEGER;
+		VAR a: LONGINT;
 	BEGIN
 		a := Pos(target, source);
 		IF a = - 1 THEN
@@ -181,22 +181,22 @@ MODULE C2cpStrings;
 		RETURN MakeDynString(target$);
 	END ToLower;
 
-	PROCEDURE IntToString* (x: INTEGER): DynString;
+	PROCEDURE IntToString* (x: LONGINT): DynString;
 		VAR s: ARRAY 256 OF CHAR;
 	BEGIN
 		Strings.IntToString(x, s);
 		RETURN MakeDynString(s$);
 	END IntToString;
 
-	PROCEDURE StringToInt* (s: ARRAY OF CHAR): INTEGER;
-		VAR x, res: INTEGER;
+	PROCEDURE StringToInt* (s: ARRAY OF CHAR): LONGINT;
+		VAR x, res: LONGINT;
 	BEGIN
 		Strings.StringToInt(s, x, res);
 		RETURN x;
 	END StringToInt;
 
 	PROCEDURE StringToReal* (IN s: ARRAY OF CHAR): REAL;
-		VAR x: REAL; res: INTEGER;
+		VAR x: REAL; res: LONGINT;
 	BEGIN
 		Strings.StringToReal(s, x, res);
 		RETURN x;

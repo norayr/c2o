@@ -14,20 +14,20 @@ MODULE C2cpCBiber;
 		NamedInteger = FALSE;
 
 	VAR
-		zurueck: INTEGER; (* Nächster Zustand nach Ende des Kommentars *)
-		tiefe: INTEGER; (* Anzahl der offenen BEGIN's *)
-		klammer: INTEGER; (* Anzahl offener '(' Klammer *)
-		zu: INTEGER; (* Wenn offen < zu dann Klammer zu einfügen *)
-		grenze: INTEGER; (* Wenn klammer <= grenze dann Bedingung einfügen *)
-		parklam: INTEGER; (* Klammertiefe der Parameter eines Funktionaufrufs *)
-		xarray: INTEGER; (* Dimensionszähler für Array *)
-		union: INTEGER; (* Zähler für Union-Record *)
-		enum: INTEGER; (* Zähler für Enum *)
-		zeile: INTEGER; (* Zeilenzahl der Procedure und Function *)
-		zaehler: INTEGER; (* Parameterzähler für 'main' & 'printf' *)
-		ma: INTEGER; (* Position von '(' im term *)
-		mi: INTEGER; (* Position von ':=' im term *)
-		mk: INTEGER; (* Klammertiefe von ma *)
+		zurueck: LONGINT; (* Nächster Zustand nach Ende des Kommentars *)
+		tiefe: LONGINT; (* Anzahl der offenen BEGIN's *)
+		klammer: LONGINT; (* Anzahl offener '(' Klammer *)
+		zu: LONGINT; (* Wenn offen < zu dann Klammer zu einfügen *)
+		grenze: LONGINT; (* Wenn klammer <= grenze dann Bedingung einfügen *)
+		parklam: LONGINT; (* Klammertiefe der Parameter eines Funktionaufrufs *)
+		xarray: LONGINT; (* Dimensionszähler für Array *)
+		union: LONGINT; (* Zähler für Union-Record *)
+		enum: LONGINT; (* Zähler für Enum *)
+		zeile: LONGINT; (* Zeilenzahl der Procedure und Function *)
+		zaehler: LONGINT; (* Parameterzähler für 'main' & 'printf' *)
+		ma: LONGINT; (* Position von '(' im term *)
+		mi: LONGINT; (* Position von ':=' im term *)
+		mk: LONGINT; (* Klammertiefe von ma *)
 		typedef: BOOLEAN; (* Type oder Variable definieren? *)
 		recdef: BOOLEAN; (* Recordtype oder Recordvariable definieren? *)
 		onlyTypedef: BOOLEAN; (* Recordtype and Recordvariable definieren? *)
@@ -65,27 +65,27 @@ MODULE C2cpCBiber;
 		vartype: ARRAY 256 OF CHAR; (* Type der Variable nach dem Quellprogramm *)
 		partype: ARRAY 256 OF CHAR; (* Type der letzen Variable in der Liste *)
 		parvar: CHAR; (* Ist Parameter vom Type VAR ? *)
-		labelnr: INTEGER; (* Label Zähler für GOTO *)
+		labelnr: LONGINT; (* Label Zähler für GOTO *)
 		labelname: ARRAY 256 OF CHAR; (* Aliasname des Labels *)
 		term: ARRAY 512 OF CHAR; (* Für ++ oder -- sammeln *)
 		plusplus: ARRAY 256 OF CHAR; (* Das nach dieser Anweisung folgende INC oder DEC *)
 		follow: ARRAY 256 OF CHAR; (* Das nach der Klammer zu folgende Schlüsselwort *)
 		blank: ARRAY 256 OF CHAR; (* Leerstellen vor Kommantar *)
 		relation: ARRAY 256 OF CHAR; (* Letzter Vergleich ist <, <=, =, >=, > oder # *)
-		index: INTEGER; (* Index 0..4 zum Merker für die FOR-Schleife *)
+		index: LONGINT; (* Index 0..4 zum Merker für die FOR-Schleife *)
 		merker: ARRAY 4 + 1 OF ARRAY 256 OF CHAR;
 
 	CONST
 		nstack = 16; (* maximale Stacktiefe *)
 
 	VAR
-		stack: INTEGER; (* Anzahl der gemerkten Werte *)
+		stack: LONGINT; (* Anzahl der gemerkten Werte *)
 		art: ARRAY nstack OF CHAR; (* Schleifenart ' ' I ? F W R C *)
-		wert: ARRAY nstack OF INTEGER; (* Tiefe beim Anfang der Schleife *)
+		wert: ARRAY nstack OF LONGINT; (* Tiefe beim Anfang der Schleife *)
 		anw: ARRAY nstack OF ARRAY 256 OF CHAR; (* diese Anweisung vor END einfügen *)
 		ende: ARRAY nstack OF BOOLEAN; (* END nach ; einfügen *)
 
-	PROCEDURE Biber* (VAR s: C2cpFiles.Scanner; VAR zustand: INTEGER; VAR ergebnis: ARRAY OF CHAR);
+	PROCEDURE Biber* (VAR s: C2cpFiles.Scanner; VAR zustand: LONGINT; VAR ergebnis: ARRAY OF CHAR);
 
 		(*  alter Zustand     gelesenes Zeichen     Aufgabe     neuer Zustand  *)
 		(*---------------------------------------------------------------------*)
@@ -96,8 +96,8 @@ MODULE C2cpCBiber;
 			IF index > 0 THEN merker[index] := merker[index] + zusatz END;
 		END Aufgabe;
 
-		PROCEDURE Rand (offset: INTEGER): C2cpStrings.DynString;
-			VAR i: INTEGER; r: ARRAY 256 OF CHAR;
+		PROCEDURE Rand (offset: LONGINT): C2cpStrings.DynString;
+			VAR i: LONGINT; r: ARRAY 256 OF CHAR;
 		BEGIN (* linker Rand in Abhängigkeit von der Blocktiefe *)
 			r := '';
 			FOR i := 1 TO tiefe + offset + 1 DO r := r + C2cpStrings.TAB END;
@@ -127,7 +127,7 @@ MODULE C2cpCBiber;
 			END;
 		END MerkerAusgeben;
 
-		PROCEDURE Push (a: CHAR; w: INTEGER; e: BOOLEAN);
+		PROCEDURE Push (a: CHAR; w: LONGINT; e: BOOLEAN);
 		BEGIN
 			IF stack < nstack THEN 
 				INC(stack)
@@ -161,7 +161,7 @@ MODULE C2cpCBiber;
 		PROCEDURE (*39*) ^NeueAnwZeile;
 
 		PROCEDURE MerkeName;
-			VAR i: INTEGER;
+			VAR i: LONGINT;
 		BEGIN
 			IF (s.class = C2cpFiles.cName) OR (s.s = '_') THEN
 				name := s.s$; (* C Version des Namens holen. *)
@@ -339,12 +339,12 @@ MODULE C2cpCBiber;
 			zeiger := FALSE;
 			sonder := '';
 			StorageClass;
-			IF s.s = 'unsigned' THEN vartype := 'INTEGER(*word*)'
-			ELSIF s.s = 'signed' THEN vartype := 'INTEGER'
-			ELSIF s.s = 'short' THEN vartype := 'SHORTINT'
-			ELSIF s.s = 'long' THEN vartype := 'LONGINT'
+			IF s.s = 'unsigned' THEN vartype := 'LONGINT(*word*)'
+			ELSIF s.s = 'signed' THEN vartype := 'LONGINT'
+			ELSIF s.s = 'short' THEN vartype := 'INTEGER'
+			ELSIF s.s = 'long' THEN vartype := 'HUGEINT'
 			ELSIF s.s = 'char' THEN vartype := 'CHAR'
-			ELSIF s.s = 'int' THEN vartype := 'INTEGER'
+			ELSIF s.s = 'int' THEN vartype := 'LONGINT'
 			ELSIF s.s = 'float' THEN vartype := 'REAL'
 			ELSIF s.s = 'double' THEN vartype := 'REAL(*double*)'
 			ELSIF s.s = 'void' THEN vartype := 'POINTER'
@@ -359,15 +359,15 @@ MODULE C2cpCBiber;
 		BEGIN
 			StorageClass;
 			IF s.s = 'short' THEN
-				IF vartype = 'INTEGER(*word*)' THEN vartype := 'SHORTINT(*byte*)' ELSE vartype := 'SHORTINT' END;
+				IF vartype = 'LONGINT(*word*)' THEN vartype := 'INTEGER(*byte*)' ELSE vartype := 'INTEGER' END;
 				Skip;
 			END;
 			IF s.s = 'long' THEN
-				IF vartype = 'INTEGER(*word*)' THEN vartype := 'LONGINT(*unsigned*)' ELSE vartype := 'LONGINT' END;
+				IF vartype = 'LONGINT(*word*)' THEN vartype := 'HUGEINT(*unsigned*)' ELSE vartype := 'HUGEINT' END;
 				Skip;
 			END;
 			IF s.s = 'char' THEN
-				IF vartype = 'INTEGER(*word*)' THEN vartype := 'CHAR(*unsigned*)' ELSE vartype := 'CHAR(*signed*)' END;
+				IF vartype = 'LONGINT(*word*)' THEN vartype := 'CHAR(*unsigned*)' ELSE vartype := 'CHAR(*signed*)' END;
 				Skip;
 			END;
 			IF s.s = 'double' THEN
@@ -436,7 +436,7 @@ MODULE C2cpCBiber;
 		END ConvertType;
 
 		PROCEDURE TypeNachschauen (): C2cpStrings.DynString;
-			VAR i: INTEGER;
+			VAR i: LONGINT;
 		BEGIN
 			i := C2cpTable.Search(gruppe, name);
 			IF i > 0 THEN
@@ -495,7 +495,7 @@ MODULE C2cpCBiber;
 					s.class := C2cpFiles.cName;
 				END;
 				IF ~(C2cpStrings.IsAlpha(s.nextCh) OR (s.nextCh = '*')) THEN
-					IF sonder # '' THEN vartype := 'INTEGER'
+					IF sonder # '' THEN vartype := 'LONGINT'
 					ELSE vartype := 'POINTER' END;
 					ListVariable;
 				END;
@@ -951,7 +951,7 @@ MODULE C2cpCBiber;
 					IF s.nextCh = ',' THEN Aufgabe('; '); Skip; END;
 				ELSE (* Parameter: nur Name *)
 					IF define THEN
-						vartype := 'INTEGER';
+						vartype := 'LONGINT';
 						C2cpTable.Insert(gruppe, name, '', vartype, '', 'V', s.line);
 					END;
 					symtype := TypeNachschauen()$;
@@ -1052,13 +1052,13 @@ MODULE C2cpCBiber;
 					IF (name # 'main') & (name # 'void') THEN
 						IF C2cpTable.GetAlias(C2cpTable.Search('', 'strlen'))$ = 'Length' THEN
 							CASE zaehler OF (* Pascal orientiert *)
-							| 1: C2cpTable.Insert(gruppe, name, 'ParamCount', 'INTEGER', '', 'F', s.line);
+							| 1: C2cpTable.Insert(gruppe, name, 'ParamCount', 'LONGINT', '', 'F', s.line);
 							| 2: C2cpTable.Insert(gruppe, name, 'ParamStr', 'STRING', '', 'F', s.line);
 							| 3: C2cpTable.Insert(gruppe, name, 'EnvStr', 'STRING', '', 'F', s.line);
 							END;
 						ELSE
 							CASE zaehler OF (* C orientiert *)
-							| 1: C2cpTable.Insert(gruppe, name, 'argc', 'INTEGER', '', 'I', s.line);
+							| 1: C2cpTable.Insert(gruppe, name, 'argc', 'LONGINT', '', 'I', s.line);
 							| 2: C2cpTable.Insert(gruppe, name, 'argv', 'CHAR', '', 'Z', s.line);
 							| 3: C2cpTable.Insert(gruppe, name, 'envp', 'CHAR', '', 'Z', s.line);
 							END;
@@ -1203,7 +1203,7 @@ MODULE C2cpCBiber;
 					zustand := 16;
 				ELSIF (zeichen = 'F') OR (s.nextCh = '(') OR (zeichen = 'P') OR (s.nextCh = '{') THEN
 					vartype := symtype$;
-					IF vartype = '' THEN vartype := 'INTEGER' END;
+					IF vartype = '' THEN vartype := 'LONGINT' END;
 					IF zeichen = 'P' THEN term := '' ELSE term := alias + ' := ' END;
 					DoProcedure;
 					IF s.nextCh # '(' THEN (* FUNCTION ohne Parameter *)
@@ -1230,7 +1230,7 @@ MODULE C2cpCBiber;
 							term := '';
 							zustand := 35;
 						ELSIF (C2cpStrings.Right(s.s, 1)$ = 'H') & (LEN(s.s$) = 4) THEN
-							s.s[3] := 'X'; (* change H to X - Konstante als CHAR statt INTEGER *)
+							s.s[3] := 'X'; (* change H to X - Konstante als CHAR statt LONGINT *)
 							Aufgabe(s.s); (* !!! ist nicht immer sinnvoll !!! *)
 							zustand := 20;
 						ELSE
@@ -1285,7 +1285,7 @@ MODULE C2cpCBiber;
 				IF s.s = '{' THEN
 					LookAhead;
 					vartype := 'RECORD';
-					IF enum # 0 THEN vartype := 'INTEGER(*enum*)' END;
+					IF enum # 0 THEN vartype := 'LONGINT(*enum*)' END;
 					IF union # 0 THEN vartype := 'RECORD(*union*)' END;
 					IF (name = 'struct') OR (name = 'union') OR (name = 'enum') THEN
 						name := name + C2cpStrings.IntToString(s.line);
@@ -1315,11 +1315,11 @@ MODULE C2cpCBiber;
 						IF NamedInteger THEN
 							Aufgabe(' ( '); 
 						ELSE
-							Aufgabe(' INTEGER(*enum*);' + C2cpStrings.CR); Aufgabe(Rand(-1)); Aufgabe('CONST '); 
+							Aufgabe(' LONGINT(*enum*);' + C2cpStrings.CR); Aufgabe(Rand(-1)); Aufgabe('CONST '); 
 						END;
 					END;
 					IF union > 0 THEN
-						Aufgabe(C2cpStrings.CR); Aufgabe(Rand(0)); Aufgabe('CASE union:INTEGER OF ');
+						Aufgabe(C2cpStrings.CR); Aufgabe(Rand(0)); Aufgabe('CASE union:LONGINT OF ');
 					END;
 					alt := gruppe$;
 					gruppe := recname$;
@@ -1335,7 +1335,7 @@ MODULE C2cpCBiber;
 		END DeclareRecord;
 
 		PROCEDURE (*23*) ListVariable;
-			VAR si, i, n: INTEGER;
+			VAR si, i, n: LONGINT;
 		BEGIN
 			KlammerLesen; (* eingeklammerte Variable lesen *)
 			IF s.class = C2cpFiles.cSpace THEN
@@ -1797,7 +1797,7 @@ MODULE C2cpCBiber;
 		END DoCase;
 
 		PROCEDURE DoReturn;
-			VAR i: INTEGER;
+			VAR i: LONGINT;
 		BEGIN
 			LookAhead2;
 			IF s.nextCh = ';' THEN
@@ -1811,7 +1811,7 @@ MODULE C2cpCBiber;
 				symtype := C2cpTable.GetType(i)$;
 				zeichen := C2cpTable.GetSign(i);
 				IF zeichen = 'P' THEN
-					IF symtype = '' THEN symtype := 'INTEGER' END;
+					IF symtype = '' THEN symtype := 'LONGINT' END;
 					C2cpTable.Update('', name, '', symtype, '', 'F', 0);
 				END;
 				IF ~ anfang THEN Aufgabe(C2cpStrings.CR); Aufgabe(Rand(0)) END;
@@ -1851,7 +1851,7 @@ MODULE C2cpCBiber;
 			END;
 		END DoHalt;
 
-		PROCEDURE DoInOut (z1, z2: INTEGER; a2: ARRAY OF CHAR);
+		PROCEDURE DoInOut (z1, z2: LONGINT; a2: ARRAY OF CHAR);
 		BEGIN
 			ln := FALSE;
 			IF C2cpTable.GetAlias(C2cpTable.Search('', 'FILE'))$ = 'TEXTFILE' THEN
@@ -1998,7 +1998,7 @@ MODULE C2cpCBiber;
 			ELSE
 				IF (term = '') & (zustand = 35) THEN
 					term := 'dummy := ';
-					C2cpTable.Insert(gruppe, 'dummy', '', 'INTEGER', '', 'V', s.line);
+					C2cpTable.Insert(gruppe, 'dummy', '', 'LONGINT', '', 'V', s.line);
 				END;
 				term := term + 'ORD(ReadKey)'; (* bioskey(0) *)
 			END;
@@ -2088,8 +2088,8 @@ MODULE C2cpCBiber;
 
 		PROCEDURE LastTerm (): C2cpStrings.DynString; (* für z.B.: i++ oder i-- *)
 			VAR
-				i: INTEGER;
-				offen: INTEGER;
+				i: LONGINT;
+				offen: LONGINT;
 				teil: ARRAY 256 OF CHAR;
 		BEGIN
 			offen := 0;
@@ -2107,7 +2107,7 @@ MODULE C2cpCBiber;
 
 		PROCEDURE NextTerm (): C2cpStrings.DynString; (* für z.B.: ++i oder --i *)
 			VAR
-				offen: INTEGER;
+				offen: LONGINT;
 				teil: ARRAY 256 OF CHAR;
 		BEGIN
 			offen := 0;
@@ -2310,7 +2310,7 @@ MODULE C2cpCBiber;
 		END ExDoppelpunkt;
 
 		PROCEDURE TermAufteilen;
-			VAR i: INTEGER; teil: ARRAY 256 OF CHAR; termleft, termright: C2cpStrings.DynString;
+			VAR i: LONGINT; teil: ARRAY 256 OF CHAR; termleft, termright: C2cpStrings.DynString;
 		BEGIN
 			IF (ma > 0) & (ma < mi) THEN
 				teil := C2cpStrings.Substr(term, ma - 1, LEN(term$) - ma + 1)$;
@@ -2541,7 +2541,7 @@ MODULE C2cpCBiber;
 		END EndAsm;
 
 		PROCEDURE (*31*) StartAnweisung;
-			VAR i: INTEGER;
+			VAR i: LONGINT;
 		BEGIN
 			IF vbegin THEN
 				i := C2cpTable.Search(gruppe, 'dummy');
@@ -2723,7 +2723,7 @@ MODULE C2cpCBiber;
 				ConvertToFunction;
 				IF symtype = 'BOOLEAN' THEN relation := '#' END;
 				IF s.s = 'sizeof' THEN
-					C2cpTable.Insert('', s.s, 'SizeOf', 'INTEGER', '', 'F', s.line);
+					C2cpTable.Insert('', s.s, 'SizeOf', 'LONGINT', '', 'F', s.line);
 				END;
 			ELSE
 				IF s.s = '[' THEN klammer := klammer + 1 END;
@@ -3026,7 +3026,7 @@ MODULE C2cpCBiber;
 			IF (s.s = ')') & (klammer = 1) THEN
 				IF zaehler > 0 THEN
 					term := C2cpStrings.Trim(term) + ', dummy';
-					C2cpTable.Insert(gruppe, 'dummy', '', 'INTEGER', '', 'V', s.line);
+					C2cpTable.Insert(gruppe, 'dummy', '', 'LONGINT', '', 'V', s.line);
 				END;
 				zustand := 35; (* Ende von printf *)
 			END;

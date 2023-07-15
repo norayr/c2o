@@ -31,32 +31,32 @@ MODULE C2cpKeytab;
 		maxKey* = 2000;
 
 	VAR
-		numberOfKey-: INTEGER;
+		numberOfKey-: LONGINT;
 		keytable: ARRAY maxKey OF RECORD
-			place: INTEGER;
-			alpha: INTEGER;
+			place: LONGINT;
+			alpha: LONGINT;
 			word: C2cpStrings.DynString;
 		END;
 
-	PROCEDURE EntryOrder* (index: INTEGER): INTEGER;
+	PROCEDURE EntryOrder* (index: LONGINT): LONGINT;
 	BEGIN
 		RETURN keytable[index].place;
 	END EntryOrder;
 
-	PROCEDURE AlphaOrder* (index: INTEGER): INTEGER;
+	PROCEDURE AlphaOrder* (index: LONGINT): LONGINT;
 	BEGIN
 		RETURN keytable[index].alpha;
 	END AlphaOrder;
 
-	PROCEDURE GetKeyword* (index: INTEGER): C2cpStrings.DynString;
+	PROCEDURE GetKeyword* (index: LONGINT): C2cpStrings.DynString;
 
 	BEGIN
 		RETURN keytable[index].word;
 	END GetKeyword;
 
-	PROCEDURE SearchKey* (word: ARRAY OF CHAR): INTEGER;
+	PROCEDURE SearchKey* (word: ARRAY OF CHAR): LONGINT;
 		VAR
-			a, b, i: INTEGER;
+			a, b, i: LONGINT;
 			w, t: ARRAY 256 OF CHAR;
 	BEGIN
 		IF word$ = '' THEN (* quick exit for empty word -- schneller Ausgang für Leerwort *)
@@ -111,7 +111,7 @@ MODULE C2cpKeytab;
 	PROCEDURE ShowKeyList*;
 		VAR
 			md: TextModels.Model; vw: TextViews.View; title: Views.Title;
-			fm: TextMappers.Formatter; i: INTEGER;
+			fm: TextMappers.Formatter; i: LONGINT;
 	BEGIN
 		title := 'Keyword table';
 		md := TextModels.dir.New();

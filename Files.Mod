@@ -16,10 +16,10 @@ MODULE C2cpFiles;
 	TYPE
 		Scanner* = POINTER TO RECORD
 			rd-: Stores.Reader;
-			line-: INTEGER;
+			line-: LONGINT;
 			nextCh-: CHAR;
-			class*: INTEGER;
-			i-: LONGINT;
+			class*: LONGINT;
+			i-: HUGEINT;
 			x-: REAL;
 			s*: ARRAY 256 OF CHAR;
 		END;
@@ -41,7 +41,7 @@ MODULE C2cpFiles;
 		convtxt*: Converters.Converter;
 
 	PROCEDURE SplitFilename* (IN filename: ARRAY OF CHAR; OUT path, name, extension: ARRAY OF CHAR);
-		VAR i, n, pa, pe: INTEGER;
+		VAR i, n, pa, pe: LONGINT;
 	BEGIN
 		n := LEN(filename$);
 		pa := - 1;
@@ -65,7 +65,7 @@ MODULE C2cpFiles;
 	END Exist;
 
 	PROCEDURE PathToFileSpec (IN path: ARRAY OF CHAR; OUT loc: Files.Locator; OUT name: Files.Name);
-		VAR i, j: INTEGER; ch: CHAR;
+		VAR i, j: LONGINT; ch: CHAR;
 	BEGIN
 		i := 0; j := 0; loc := Files.dir.This('');
 		WHILE (loc.res = 0) & (i < LEN(path) - 1) & (j < LEN(name) - 1) & (path[i] # 0X) DO
@@ -132,7 +132,7 @@ MODULE C2cpFiles;
 		VAR ch: CHAR; hex: BOOLEAN;
 
 		PROCEDURE ReadChar;
-			VAR n: INTEGER; c: SHORTCHAR;
+			VAR n: LONGINT; c: SHORTCHAR;
 		BEGIN
 			n := LEN(sc.s$); sc.s[n] := ch; sc.s[n + 1] := 0X;
 			sc.rd.ReadSChar(c); ch := c;
@@ -292,7 +292,7 @@ MODULE C2cpFiles;
 	END Eof;
 
 	PROCEDURE (text: Text) Flush*, NEW;
-		VAR res: INTEGER;
+		VAR res: LONGINT;
 	BEGIN
 		ASSERT(text.writing, 20);
 		Views.Register(text.vw, Views.dontAsk, text.loc, text.fname, text.conv, res);
@@ -301,7 +301,7 @@ MODULE C2cpFiles;
 	END Flush;
 
 	PROCEDURE (text: Text) Close*, NEW;
-		VAR res: INTEGER;
+		VAR res: LONGINT;
 	BEGIN
 		res := 0;
 		IF text.reading THEN

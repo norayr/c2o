@@ -18,10 +18,10 @@ MODULE C2cpCmds;
 	VAR
 		pfad: ARRAY 256 OF CHAR; (* Pfad des zu übersetzenden Programmes *)
 		out, hdr, tmp: C2cpFiles.Text; (* Ausgabedatei für odc & FORWARD-Definitionen *)
-		forwardpos: INTEGER;
+		forwardpos: LONGINT;
 
 	PROCEDURE PreLoad (IN name: ARRAY OF CHAR);
-		VAR i: INTEGER;
+		VAR i: LONGINT;
 	BEGIN
 		(* reading pre definition symbol table file *)
 		IF C2cpFiles.Exist(pfad, name + '.pre') THEN
@@ -35,13 +35,13 @@ MODULE C2cpCmds;
 		END;
 	END PreLoad;
 
-	PROCEDURE InsertAt (pos: INTEGER; clipboard: C2cpFiles.Text);
+	PROCEDURE InsertAt (pos: LONGINT; clipboard: C2cpFiles.Text);
 	BEGIN
 		out.md.Insert(pos, clipboard.md, 0, clipboard.md.Length()); out.fm.SetPos(out.md.Length());
 	END InsertAt;
 
 	PROCEDURE WriteBuffer (out: C2cpFiles.Text; IN aufgabe: ARRAY OF CHAR);
-		VAR i: INTEGER;
+		VAR i: LONGINT;
 	BEGIN
 		FOR i := 0 TO LEN(aufgabe$) - 1 DO
 			IF aufgabe[i] = C2cpStrings.TAB THEN out.fm.WriteTab;
@@ -52,7 +52,7 @@ MODULE C2cpCmds;
 	END WriteBuffer;
 
 	PROCEDURE WriteHeader (out, hdr: C2cpFiles.Text);
-		VAR i, n: INTEGER; name: ARRAY 256 OF CHAR;
+		VAR i, n: LONGINT; name: ARRAY 256 OF CHAR;
 	BEGIN
 		InsertAt(0, hdr);
 		name := C2cpTable.GetAlias(1)$;
@@ -85,7 +85,7 @@ MODULE C2cpCmds;
 
 	PROCEDURE Pass1 (IN quelle: ARRAY OF CHAR);
 		VAR
-			s: C2cpFiles.Scanner; zustand: INTEGER; aufgabe: ARRAY 512 OF CHAR;
+			s: C2cpFiles.Scanner; zustand: LONGINT; aufgabe: ARRAY 512 OF CHAR;
 	BEGIN
 		StdLog.String('   ' + pfad + quelle); StdLog.Ln;
 		IF C2cpFiles.Exist(pfad, quelle$) THEN
@@ -109,7 +109,7 @@ MODULE C2cpCmds;
 
 	PROCEDURE Pass2 (IN quelle: ARRAY OF CHAR);
 		VAR
-			s: C2cpFiles.Scanner; zustand: INTEGER; aufgabe: ARRAY 512 OF CHAR;
+			s: C2cpFiles.Scanner; zustand: LONGINT; aufgabe: ARRAY 512 OF CHAR;
 	BEGIN
 		StdLog.String('   ' + pfad + quelle); StdLog.Ln;
 		NEW(s);

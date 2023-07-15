@@ -19,12 +19,12 @@ MODULE C2cpTrace;
 		debug: BOOLEAN;
 		pass2: BOOLEAN;
 		newline: BOOLEAN;
-		state: INTEGER;
+		state: LONGINT;
 
-	PROCEDURE WriteLink (number: INTEGER);
+	PROCEDURE WriteLink (number: LONGINT);
 		VAR
 			attr: TextModels.Attributes;
-			beg, end, color: INTEGER;
+			beg, end, color: LONGINT;
 			num, msg: ARRAY 32 OF CHAR;
 			cmd: ARRAY 128 OF CHAR;
 	BEGIN
@@ -46,7 +46,7 @@ MODULE C2cpTrace;
 		StdLog.View(StdLinks.dir.NewLink(""));
 	END WriteLink;
 
-	PROCEDURE Token* (lineNumber: INTEGER; IN s: ARRAY OF CHAR);
+	PROCEDURE Token* (lineNumber: LONGINT; IN s: ARRAY OF CHAR);
 	BEGIN
 		IF debug & pass2 THEN
 			IF ~newline THEN StdLog.Ln END;
@@ -55,7 +55,7 @@ MODULE C2cpTrace;
 		END;
 	END Token;
 
-	PROCEDURE Sub* (number: INTEGER);
+	PROCEDURE Sub* (number: LONGINT);
 	BEGIN
 		IF debug & pass2 THEN
 			IF newline THEN StdLog.Tab ELSE StdLog.Char(' ') END;
@@ -64,7 +64,7 @@ MODULE C2cpTrace;
 		END;
 	END Sub;
 
-	PROCEDURE Result* (zustand: INTEGER; IN s: ARRAY OF CHAR);
+	PROCEDURE Result* (zustand: LONGINT; IN s: ARRAY OF CHAR);
 	BEGIN
 		IF debug & pass2 THEN
 			state := zustand;
