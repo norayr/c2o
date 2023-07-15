@@ -3,7 +3,7 @@
 --   (C) Helmut Zinn   V88/05/21 - V94/03/09 - V05/03/18
 -----------------------------------------------------------------------------*)
 
-MODULE C2cpStrings;
+MODULE C2OStrings;
 
 	
 
@@ -209,4 +209,4 @@ MODULE C2cpStrings;
 		RETURN MakeDynString(s$);
 	END RealToString;
 
-END C2cpStrings.
+END C2OStrings.
