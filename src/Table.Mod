@@ -45,7 +45,7 @@ MODULE C2cpTable;
 	
 
 	IMPORT
-		C2cpKeytab, C2cpStrings, 
+		C2cpKeytab, C2cpStrings,
 		Converters, Files, Ports, StdLog, TextMappers, TextModels, TextRulers, TextViews, Views;
 
 	CONST
